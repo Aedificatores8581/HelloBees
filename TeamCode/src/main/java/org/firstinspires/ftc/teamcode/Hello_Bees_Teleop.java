@@ -29,6 +29,8 @@
 
 package org.firstinspires.ftc.teamcode;
 
+import static java.lang.Math.abs;
+
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -39,7 +41,13 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+@Config
 @TeleOp(name="Hello Bees-Java", group="Iterative OpMode")
 public class Hello_Bees_Teleop extends OpMode
 {
@@ -53,7 +61,7 @@ public class Hello_Bees_Teleop extends OpMode
     private DigitalChannel compressor1;
     private DcMotor pump;
     private DigitalChannel turret_home;
-    private DcMotor turret;
+    private DcMotorEx turret;
     private DigitalChannel front_limit;
     private DigitalChannel rear_limit;
     private CRServo shoulder;
@@ -84,6 +92,17 @@ public class Hello_Bees_Teleop extends OpMode
     boolean turretHomed = false;
     int automationState = 0;
     boolean armStowed = false;
+    public int turret_target = 0;
+    public int turret_stowed = 6000;
+    //automation targets
+    public int turret_movement_target = 0;
+    public double shoulder_target = 2;
+    int linkage_target = 0;
+    double wrist_target = 0;
+    public double shoulder_stowed = .5;
+    private PIDController turret_controller;
+    public static double p =0.001, i=0, d = 0.00003;
+    private final double turret_ticks_in_degree = 0;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -99,7 +118,7 @@ public class Hello_Bees_Teleop extends OpMode
         compressor1 = hardwareMap.get(DigitalChannel.class, "compressor1");
         pump = hardwareMap.get(DcMotor.class, "pump");
         turret_home = hardwareMap.get(DigitalChannel.class, "turret_home");
-        turret = hardwareMap.get(DcMotor.class, "turret");
+        turret = hardwareMap.get(DcMotorEx.class, "turret");
         front_limit = hardwareMap.get(DigitalChannel.class, "front_limit");
         rear_limit = hardwareMap.get(DigitalChannel.class, "rear_limit");
         shoulder = hardwareMap.get(CRServo.class, "shoulder");
@@ -119,6 +138,8 @@ public class Hello_Bees_Teleop extends OpMode
         ButtonBblock = false;
         AutoBlock = false;
         ButtonAblock = false;
+        turret_controller = new PIDController(p, i ,d);
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.addData("Status", "Initialized");
     }
 
@@ -174,10 +195,16 @@ public class Hello_Bees_Teleop extends OpMode
         telemetry.addData("Turret Limit", turretHomeSensor);
         telemetry.addData("Fogger (False On)", foggerRelay);
         telemetry.addData("Turret Position", turretMotorPosition);
+        telemetry.addData("Turret Position", turret_target);
         telemetry.addData("armPos", armPos);
         telemetry.addData("servo", wristServoPosition);
         telemetry.addData("linkage", linkageMotorPosition);
-        telemetry.addData("Automation State:", "State ", automationState,"Stowed ", armStowed, "Auto On ", armAutomation, "Homed " , turretHomed);
+        telemetry.addData("LinkageState", linkage.isBusy());
+        telemetry.addLine("Automation State:");
+        telemetry.addData("State ", automationState);
+        telemetry.addData("Stowed ", armStowed);
+        telemetry.addData("Auto On ", armAutomation);
+        telemetry.addData( "Homed " , turretHomed);
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
     }
@@ -204,6 +231,7 @@ public class Hello_Bees_Teleop extends OpMode
     }
 
     private void actuatorCommands (){
+        armStowed = !rearLinkageLimit && !((abs(turret_stowed - turretMotorPosition)) > 100) && !(armPos < shoulder_stowed - .05) && !(armPos > shoulder_stowed + .05);
         //drivetrain motors
         leftdriveMotorPower = Math.min(Math.max(leftdriveMotorPower, -.3),.3); //movement safety
         rightdriveMotorPower = Math.min(Math.max(rightdriveMotorPower, -.3),.3); //movement safety
@@ -216,16 +244,21 @@ public class Hello_Bees_Teleop extends OpMode
 
         //linkage movement
         if (!frontLinkageLimit) {
-            linkage.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-            linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             linkageMotorPower = Math.min(Math.max(linkageMotorPower, 0),1); //movement safety
         }
         if (!rearLinkageLimit) {
+            if(!armAutomation){
+            linkage.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);}
             linkageMotorPower = Math.min(Math.max(linkageMotorPower, -1),0); //movement safety
         }
         linkage.setPower(linkageMotorPower);
 
         //turret movement
+        if(armAutomation) {
+            turret_controller.setPID(p, i, d);
+            turretMotorPower = turret_controller.calculate(turretMotorPosition, turret_target);
+        }
         if (!turret_home.getState()) {
             turret.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             turret.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -268,13 +301,24 @@ public class Hello_Bees_Teleop extends OpMode
         if (gamepad1.x){
             automationState = 1;
             armAutomation = true;
+            linkage_target = -100;
+            shoulder_target = 2;
+            wrist_target = .7;
+            turret_movement_target = 1500;
             automaticSpray();
         }
-        if (gamepad1.y){
+        if(gamepad1.b){
+            linkageMotorPower = 1;
+            armAutomation = true;
+            linkage.setTargetPosition(-100);
+            linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            automationState = 50;
+        }
+        if (gamepad1.y){ //turn off automation
             armAutomation = false;
             automationState = 0;
         }
-        if (gamepad1.a){
+        if (gamepad1.a){ //stow turret
             armAutomation = true;
             automationState = 99;
         }
@@ -354,42 +398,69 @@ public class Hello_Bees_Teleop extends OpMode
         }
         else if(automationState == 2){
             automationState = 3;
-            linkage.setTargetPosition(100);
+            linkage.setTargetPosition(linkage_target);
             linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            linkageMotorPower = 1;
-            turret.setTargetPosition(1500);
-            turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            turretMotorPower = 1;
+            linkageMotorPower = -.5;
+            turret_target = turret_movement_target;
+            if(armPos> shoulder_target) {
+                shoulderMotorPower = .2;
+            }
+            if(armPos< shoulder_target){
+                shoulderMotorPower  = -.2;
+            }
+            if(armPos == shoulder_target) {
+                shoulderMotorPower = 0;
+            }
+            wristServoPosition = wrist_target;
+        }
+        else if (automationState ==3){
+            if(!linkage.isBusy()){
+                linkageMotorPower = 0;
+                linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            }
+            if(armPos>shoulder_target -.05 && armPos < shoulder_target +.05){
+                shoulderMotorPower = 0;
+            }
+
+            if(!linkage.isBusy() && (abs(turret_target - turretMotorPosition))<100  && armPos>shoulder_target - .05 && armPos < shoulder_target +.05){
+                automationState = 0;
+                armAutomation = false;
+            }
         }
         else if(automationState == 99){
             automationState = 98;
-            linkage.setTargetPosition(0);
-            linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             linkageMotorPower = .5;
-            turret.setTargetPosition(6000);
-            turret.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            turretMotorPower = .5;
-            if(armPos>.5) {
-                shoulderMotorPower = -.2;
+            turret_target = 6000;
+            wristServoPosition = .5;
+
+            if(armPos> shoulder_stowed) {
+                shoulderMotorPower = .2;
             }
-            if(armPos<.5){
-                shoulderMotorPower  = .2;
+            if(armPos< shoulder_stowed){
+                shoulderMotorPower  = -.2;
             }
-            if(armPos ==.5) {
+            if(armPos == shoulder_stowed) {
                 shoulderMotorPower = 0;
             }
         }
         else if(automationState == 98){
-            if(!linkage.isBusy() &&!turret.isBusy() && armPos>.49 && armPos < .51){
+            if(!rearLinkageLimit){
                 linkageMotorPower = 0;
-                linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-                turretMotorPower = 0;
-                turret.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            }
+            if(armPos>.45 && armPos < .55){
                 shoulderMotorPower = 0;
+            }
+
+            if(!rearLinkageLimit && (abs(turret_target - turretMotorPosition))<50  && armPos> shoulder_stowed - .05 && armPos < shoulder_stowed +.05){
                 armStowed = true;
                 automationState = 0;
                 armAutomation = false;
             }
+        }
+        else if (automationState ==50){
+            if(!linkage.isBusy()) {
+                armAutomation = false;
+                automationState = 0;}
         }
         else{
             armAutomation = false;
