@@ -46,6 +46,16 @@ import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import java.util.List;
 
 @Config
 @TeleOp(name="Hello Bees-Java", group="Iterative OpMode")
@@ -73,6 +83,10 @@ public class Hello_Bees_Teleop extends OpMode
     boolean ValveButtonBlock;
     boolean ButtonBblock;
     boolean ButtonAblock;
+    boolean ButtonA1block = false;
+    boolean ButtonB1block = false;
+    boolean ButtonX1block = false;
+    boolean ButtonY1block = false;
     double armPos = 0;
     double linkageMotorPower = 0;
     double wristServoPosition = 0;
@@ -97,18 +111,31 @@ public class Hello_Bees_Teleop extends OpMode
     //automation targets
     public int turret_movement_target = 0;
     public double shoulder_target = 2;
+    public double shoulder_movement_target = 0;
     int linkage_target = 0;
     double wrist_target = 0;
     public double shoulder_stowed = .5;
     private PIDController turret_controller;
+    private PIDController shoulder_controller;
+    public static double shoulder_p = 2, shoulder_i = 0, shoulder_d = .1;
     public static double p =0.001, i=0, d = 0.00003;
     private final double turret_ticks_in_degree = 0;
+    private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
+    private Position cameraPosition = new Position(DistanceUnit.INCH,-8, -7, 13, 0);
+    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
+    private AprilTagProcessor aprilTag;
+    private VisionPortal visionPortal;
+    List<AprilTagDetection> currentDetections;
+    Position detectedPosition;
+    YawPitchRollAngles detectedYPRA;
+    int detectedTageID;
 
     /*
      * Code to run ONCE when the driver hits INIT
      */
     @Override
     public void init() {
+        initAprilTag();
         telemetry.addData("Status", "Initialized");
         rightdrive = hardwareMap.get(CRServo.class, "rightdrive");
         leftdrive = hardwareMap.get(CRServo.class, "leftdrive");
@@ -126,7 +153,6 @@ public class Hello_Bees_Teleop extends OpMode
 
         rightdrive.setDirection(CRServo.Direction.REVERSE);
         leftdrive.setDirection(CRServo.Direction.REVERSE);
-        // Put initialization blocks here.
         wrist.setPosition(0.5);
         valve1.setMode(DigitalChannel.Mode.INPUT);
         linkage.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -139,6 +165,7 @@ public class Hello_Bees_Teleop extends OpMode
         AutoBlock = false;
         ButtonAblock = false;
         turret_controller = new PIDController(p, i ,d);
+        shoulder_controller = new PIDController(shoulder_p, shoulder_i, shoulder_d);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.addData("Status", "Initialized");
     }
@@ -207,6 +234,22 @@ public class Hello_Bees_Teleop extends OpMode
         telemetry.addData( "Homed " , turretHomed);
         telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
+        telemetry.addData("# AprilTags Detected", currentDetections.size());
+        for (AprilTagDetection detection : currentDetections) {
+            if (detection.metadata != null) {
+                telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
+                telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.robotPose.getPosition().x,
+                        detection.robotPose.getPosition().y, detection.robotPose.getPosition().z));
+                telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)",
+                        detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES), detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES),
+                        detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
+            } else {
+                telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
+                telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
+            }
+        }
+        telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
+        telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
     }
     private void home_turret(){
         if(!turretHomed){
@@ -228,6 +271,16 @@ public class Hello_Bees_Teleop extends OpMode
         turretHomeSensor = turret_home.getState();
         turretMotorPosition = turret.getCurrentPosition();
         linkageMotorPosition = linkage.getCurrentPosition();
+        currentDetections = aprilTag.getDetections();
+        if (!currentDetections.isEmpty()) {
+            AprilTagDetection detection = currentDetections.get(0);
+            detectedTageID = detection.id;
+            detectedPosition = new Position (DistanceUnit.INCH, detection.robotPose.getPosition().x, detection.robotPose.getPosition().y,
+                    detection.robotPose.getPosition().z, 0);
+            detectedYPRA = new YawPitchRollAngles(AngleUnit.DEGREES, detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),
+                    detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES), detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES),
+                    0);
+        }
     }
 
     private void actuatorCommands (){
@@ -273,6 +326,10 @@ public class Hello_Bees_Teleop extends OpMode
         turret.setPower(turretMotorPower);
 
         //shoulder movement
+        if(armAutomation){
+            shoulder_controller.setPID(shoulder_p, shoulder_i, shoulder_d);
+            shoulderMotorPower = -shoulder_controller.calculate(armPos,shoulder_target);
+        }
         shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.2),.2); //movement safety
         if(armPos <.35){
             shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.2),0); //movement safety
@@ -298,29 +355,41 @@ public class Hello_Bees_Teleop extends OpMode
         leftdriveMotorPower = Math.min(Math.max(gamepad1.right_stick_y * 0.3, -0.3), 0.3);
 
         //automate spray
-        if (gamepad1.x){
+        if (gamepad1.x &&!ButtonX1block) {
+            ButtonX1block = true;
             automationState = 1;
             armAutomation = true;
             linkage_target = -100;
-            shoulder_target = 2;
+            shoulder_movement_target = 2;
             wrist_target = .7;
             turret_movement_target = 1500;
             automaticSpray();
         }
-        if(gamepad1.b){
+        else if (!gamepad1.x){
+            ButtonX1block = false;
+        }
+        if(gamepad1.b && !ButtonB1block){
+            ButtonB1block = true;
             linkageMotorPower = 1;
             armAutomation = true;
             linkage.setTargetPosition(-100);
             linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
             automationState = 50;
         }
+        else if (!gamepad1.b){
+            ButtonB1block = false;
+        }
         if (gamepad1.y){ //turn off automation
             armAutomation = false;
             automationState = 0;
         }
-        if (gamepad1.a){ //stow turret
+        if (gamepad1.a && !ButtonA1block){//stow turret
+            ButtonA1block = true;
             armAutomation = true;
             automationState = 99;
+        }
+        else if(!gamepad1.a){
+            ButtonA1block = false;
         }
         //pump controls
         if (gamepad2.y && !ButtonBlockValuePump) {
@@ -398,59 +467,48 @@ public class Hello_Bees_Teleop extends OpMode
         }
         else if(automationState == 2){
             automationState = 3;
-            linkage.setTargetPosition(linkage_target);
-            linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            linkageMotorPower = -.5;
-            turret_target = turret_movement_target;
-            if(armPos> shoulder_target) {
-                shoulderMotorPower = .2;
-            }
-            if(armPos< shoulder_target){
-                shoulderMotorPower  = -.2;
-            }
-            if(armPos == shoulder_target) {
-                shoulderMotorPower = 0;
-            }
             wristServoPosition = wrist_target;
+            turret_target = turret_movement_target;
+            shoulder_target = shoulder_movement_target;
         }
         else if (automationState ==3){
+            if((abs(turret_target - turretMotorPosition))<100  && armPos>shoulder_movement_target - .05 && armPos < shoulder_movement_target +.05){
+                linkage.setTargetPosition(linkage_target);
+                linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                linkageMotorPower = -.5;
+                automationState = 4;
+            }
+        }
+        else if (automationState ==4){
             if(!linkage.isBusy()){
                 linkageMotorPower = 0;
                 linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                automationState = 5;
             }
-            if(armPos>shoulder_target -.05 && armPos < shoulder_target +.05){
-                shoulderMotorPower = 0;
-            }
-
-            if(!linkage.isBusy() && (abs(turret_target - turretMotorPosition))<100  && armPos>shoulder_target - .05 && armPos < shoulder_target +.05){
+        }
+        else if (automationState ==5) {
+            if (!linkage.isBusy() && (abs(turret_target - turretMotorPosition)) < 100 && armPos > shoulder_movement_target - .05 && armPos < shoulder_movement_target + .05) {
                 automationState = 0;
                 armAutomation = false;
             }
         }
         else if(automationState == 99){
             automationState = 98;
-            linkageMotorPower = .5;
-            turret_target = 6000;
-            wristServoPosition = .5;
+            shoulder_target = armPos;
+            turret_target = (int) turretMotorPosition;
+            linkageMotorPower = 0.5;
 
-            if(armPos> shoulder_stowed) {
-                shoulderMotorPower = .2;
-            }
-            if(armPos< shoulder_stowed){
-                shoulderMotorPower  = -.2;
-            }
-            if(armPos == shoulder_stowed) {
-                shoulderMotorPower = 0;
-            }
         }
         else if(automationState == 98){
             if(!rearLinkageLimit){
                 linkageMotorPower = 0;
+                turret_target = 6000;
+                wristServoPosition = .5;
+                shoulder_target = shoulder_stowed;
+                automationState = 97;
             }
-            if(armPos>.45 && armPos < .55){
-                shoulderMotorPower = 0;
-            }
-
+        }
+        else if(automationState == 97){
             if(!rearLinkageLimit && (abs(turret_target - turretMotorPosition))<50  && armPos> shoulder_stowed - .05 && armPos < shoulder_stowed +.05){
                 armStowed = true;
                 automationState = 0;
@@ -466,5 +524,49 @@ public class Hello_Bees_Teleop extends OpMode
             armAutomation = false;
         }
     }
+    private void initAprilTag() {
+        // Create the AprilTag processor.
+        aprilTag = new AprilTagProcessor.Builder()
 
+                // The following default settings are available to un-comment and edit as needed.
+                //.setDrawAxes(false)
+                //.setDrawCubeProjection(false)
+                //.setDrawTagOutline(true)
+                //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
+                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
+                .setCameraPose(cameraPosition, cameraOrientation)
+
+                // == CAMERA CALIBRATION ==
+                // If you do not manually specify calibration parameters, the SDK will attempt
+                // to load a predefined calibration for your camera.
+                //.setLensIntrinsics(578.272, 578.272, 402.145, 221.506)
+                // ... these parameters are fx, fy, cx, cy.
+
+                .build();
+
+        // Adjust Image Decimation to trade-off detection-range for detection-rate.
+        // eg: Some typical detection data using a Logitech C920 WebCam
+        // Decimation = 1 ..  Detect 2" Tag from 10 feet away at 10 Frames per second
+        // Decimation = 2 ..  Detect 2" Tag from 6  feet away at 22 Frames per second
+        // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second (default)
+        // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second (default)
+        // Note: Decimation can be changed on-the-fly to adapt during a match.
+        aprilTag.setDecimation(1);
+
+        // Create the vision portal by using a builder.
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+
+        // Set the camera (webcam vs. built-in RC phone camera).
+        if (USE_WEBCAM) {
+            builder.setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"));
+        } else {
+            builder.setCamera(BuiltinCameraDirection.BACK);
+        }
+        // Set and enable the processor.
+        builder.addProcessor(aprilTag);
+        // Build the Vision Portal, using the above settings.
+        visionPortal = builder.build();
+        visionPortal.setProcessorEnabled(aprilTag, true);
+    }   // end method initAprilTag()
 }
