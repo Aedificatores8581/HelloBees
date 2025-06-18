@@ -56,6 +56,8 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.Queue;
 
 @Config
 @TeleOp(name="Hello Bees-Java", group="Iterative OpMode")
@@ -88,6 +90,7 @@ public class Hello_Bees_Teleop extends OpMode
     boolean ButtonX1block = false;
     boolean ButtonY1block = false;
     double armPos = 0;
+    double shoulder_angle = 0;
     double linkageMotorPower = 0;
     double wristServoPosition = 0;
     double shoulderMotorPower = 0;
@@ -119,7 +122,7 @@ public class Hello_Bees_Teleop extends OpMode
     private PIDController shoulder_controller;
     public static double shoulder_p = 2, shoulder_i = 0, shoulder_d = .1;
     public static double p =0.001, i=0, d = 0.00003;
-    private final double turret_ticks_in_degree = 0;
+    private final double turret_ticks_in_degree = 64.47;
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private Position cameraPosition = new Position(DistanceUnit.INCH,-8, -7, 13, 0);
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
@@ -129,6 +132,9 @@ public class Hello_Bees_Teleop extends OpMode
     Position detectedPosition;
     YawPitchRollAngles detectedYPRA;
     int detectedTageID;
+    Queue<Double> loopTimes = new LinkedList<>();
+    int loop_Window_Size = 10;
+    Double averageLoopTime = 0.0;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -168,6 +174,11 @@ public class Hello_Bees_Teleop extends OpMode
         shoulder_controller = new PIDController(shoulder_p, shoulder_i, shoulder_d);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.addData("Status", "Initialized");
+        loopTimes.offer(runtime.milliseconds());
+        loopTimes.offer(runtime.milliseconds());
+        if(loopTimes.size() > loop_Window_Size){
+            loopTimes.poll();
+        }
     }
 
     /*
@@ -205,6 +216,17 @@ public class Hello_Bees_Teleop extends OpMode
             automaticSpray();
         }
         actuatorCommands();
+        loopTimes.offer(runtime.milliseconds());
+        if(loopTimes.size() > loop_Window_Size){
+            loopTimes.poll();
+        }
+        double loop_time_totalDifference = 0;
+        Double[] loopTimesArray = loopTimes.toArray(new Double [0]); // Convert queue to array
+
+        for (int i = 0; i < loopTimesArray.length - 1; i++) {
+            loop_time_totalDifference += loopTimesArray[i + 1] - loopTimesArray[i]; // Calculate difference between consecutive timestamps
+        }
+        averageLoopTime = loop_time_totalDifference / (loopTimesArray.length - 1);
     }
 
     /*
@@ -212,27 +234,16 @@ public class Hello_Bees_Teleop extends OpMode
      */
     @Override
     public void stop() {
+        visionPortal.close();
     }
 
     private void telemetry (){
-        telemetry.addData("Pump Power", pumpMotorPower);
-        telemetry.addData("Fan Relay (False On)", fanRelay);
-        telemetry.addData("Front Linkage Limit", frontLinkageLimit);
-        telemetry.addData("Rear Linkage Limit", rearLinkageLimit);
-        telemetry.addData("Turret Limit", turretHomeSensor);
-        telemetry.addData("Fogger (False On)", foggerRelay);
-        telemetry.addData("Turret Position", turretMotorPosition);
-        telemetry.addData("Turret Position", turret_target);
-        telemetry.addData("armPos", armPos);
-        telemetry.addData("servo", wristServoPosition);
-        telemetry.addData("linkage", linkageMotorPosition);
-        telemetry.addData("LinkageState", linkage.isBusy());
-        telemetry.addLine("Automation State:");
-        telemetry.addData("State ", automationState);
-        telemetry.addData("Stowed ", armStowed);
-        telemetry.addData("Auto On ", armAutomation);
-        telemetry.addData( "Homed " , turretHomed);
-        telemetry.addData("Status", "Run Time: " + runtime.toString());
+        telemetry.addLine(String.format("Auto: State %d Enabled %b Stowed %b Homed %b",automationState, armAutomation, armStowed, turretHomed));
+        telemetry.addLine(String.format("Link: Pos %d Front %b Rear %b Busy %b",(int) linkageMotorPosition,frontLinkageLimit, rearLinkageLimit, linkage.isBusy()));
+        telemetry.addLine(String.format("Fogger(False on): Fan %b Fog %b Pump (%.2f)", foggerRelay, fanRelay, pumpMotorPower));
+        telemetry.addLine(String.format("Arm Loc Turret: Pos %d Target %d Angle (%.1f)",(int)turretMotorPosition, turret_target, (turretMotorPosition/turret_ticks_in_degree)-93));
+        telemetry.addLine(String.format("Arm Loc Wrist: (%.2f) Shoulder: Raw (%.2f), Angle (%.1f)", wristServoPosition, armPos, shoulder_angle));
+        telemetry.addLine(String.format("Status: Run Time: %s Average Loop: %.0f", runtime.toString(), averageLoopTime));
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
         telemetry.addData("# AprilTags Detected", currentDetections.size());
         for (AprilTagDetection detection : currentDetections) {
@@ -263,6 +274,7 @@ public class Hello_Bees_Teleop extends OpMode
     private void sensorRead (){
         //shoulder position
         armPos = pot1.getVoltage();
+        shoulder_angle = (270*armPos +445.5 - Math.sqrt((((270 * armPos) + 445.5) * ((270 * armPos) + 445.5)) + ((4 * armPos) * ((36450 * armPos) + 120135))))/(2*armPos);
 
         foggerRelay = compressor1.getState();
         fanRelay = valve1.getState();
@@ -381,6 +393,7 @@ public class Hello_Bees_Teleop extends OpMode
         }
         if (gamepad1.y){ //turn off automation
             armAutomation = false;
+            linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             automationState = 0;
         }
         if (gamepad1.a && !ButtonA1block){//stow turret
