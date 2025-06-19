@@ -29,7 +29,7 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import static java.lang.Math.abs;
+import static java.lang.Math.*;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -123,9 +123,30 @@ public class Hello_Bees_Teleop extends OpMode
     public static double shoulder_p = 2, shoulder_i = 0, shoulder_d = .1;
     public static double p =0.001, i=0, d = 0.00003;
     private final double turret_ticks_in_degree = 64.47;
+    private final double TURRET_ENCODER_TO_RADIANS = toRadians(turret_ticks_in_degree);
+    private final double ARM_ENCODER_IN_DEGREE = .0122222;
+    private final double ARM_ENCODER_TO_RADIANS = toRadians(ARM_ENCODER_IN_DEGREE);
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private Position cameraPosition = new Position(DistanceUnit.INCH,-8, -7, 13, 0);
+    Position cameraRelCoords;
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
+    //Camera Pose
+    double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
+    double PITCH_CAM = 0.785398, YAW_CAM = -1.5708, ROLL_CAM = 0;
+    //extension measurements
+    double MIN_EXTENSION_LENGTH = 10.25;
+    double EXTENSION_RANGE = 13.75;
+    double MAX_EXTENSION_LENGTH = MIN_EXTENSION_LENGTH + EXTENSION_RANGE;
+    //arm or shoulder measurements
+    double PIVOT_HEIGHT = 3.5;
+    double z_0 = X_CAM - PIVOT_HEIGHT;
+    double ARM_LENGTH = 16.5;
+    double LINKAGE_LENGTH_1 = 12;
+    double LINKAGE_LENGTH_2 = 13;
+    double SLIDER_HEIGHT = 1.7;
+    double TIP_TO_PIVOT_DISTANCE = 8;
+    double RETRACTED_LINK_1_ANGLE;
+    Position rotation_matrix;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
     List<AprilTagDetection> currentDetections;
@@ -135,6 +156,11 @@ public class Hello_Bees_Teleop extends OpMode
     Queue<Double> loopTimes = new LinkedList<>();
     int loop_Window_Size = 10;
     Double averageLoopTime = 0.0;
+    //target distance below the AprilTag
+    double AprilTag_distance_away = 3;
+    boolean arm_to_AprilTag = false;
+    AprilTagDetection currentAprilTag;
+    Position robotRelCoords;
 
     /*
      * Code to run ONCE when the driver hits INIT
@@ -142,6 +168,10 @@ public class Hello_Bees_Teleop extends OpMode
     @Override
     public void init() {
         initAprilTag();
+        rotation_matrix = new Position (DistanceUnit.INCH,-8, -7, 13, 0);
+    //[[cos(YAW_CAM)*cos(PITCH_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*sin(ROLL_CAM) + cos(YAW_CAM)*cos(ROLL_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*cos(ROLL_CAM) - cos(YAW_CAM)*sin(ROLL_CAM)]], [[sin(YAW_CAM)*cos(PITCH_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*sin(ROLL_CAM) + cos(YAW_CAM)*cos(ROLL_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*cos(ROLL_CAM) - cos(YAW_CAM)*sin(ROLL_CAM)]], [[-sin(PITCH_CAM)], [cos(PITCH_CAM)*sin(ROLL_CAM)], [cos(PITCH_CAM)*cos(ROLL_CAM)]];
+        RETRACTED_LINK_1_ANGLE = asin(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2) + pow(SLIDER_HEIGHT,2)+ pow(LINKAGE_LENGTH_1,2)-pow(LINKAGE_LENGTH_2,2)) / (2* LINKAGE_LENGTH_1 * sqrt(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2)+ pow(SLIDER_HEIGHT,2))) - atan2((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE) , SLIDER_HEIGHT);	//radians
+
         telemetry.addData("Status", "Initialized");
         rightdrive = hardwareMap.get(CRServo.class, "rightdrive");
         leftdrive = hardwareMap.get(CRServo.class, "leftdrive");
@@ -215,6 +245,12 @@ public class Hello_Bees_Teleop extends OpMode
         if(armAutomation){
             automaticSpray();
         }
+        if(arm_to_AprilTag && !currentDetections.isEmpty()){
+            currentAprilTag = currentDetections.get(0);
+            cameraRelCoords = currentAprilTag.robotPose.getPosition();
+            robotRelCoords = getRobotRelativeCoordinate (cameraRelCoords);
+            //turret_target_AprilTag = ;
+        }
         actuatorCommands();
         loopTimes.offer(runtime.milliseconds());
         if(loopTimes.size() > loop_Window_Size){
@@ -274,8 +310,8 @@ public class Hello_Bees_Teleop extends OpMode
     private void sensorRead (){
         //shoulder position
         armPos = pot1.getVoltage();
-        shoulder_angle = (270*armPos +445.5 - Math.sqrt((((270 * armPos) + 445.5) * ((270 * armPos) + 445.5)) + ((4 * armPos) * ((36450 * armPos) + 120135))))/(2*armPos);
-
+        //shoulder_angle = (270*armPos +445.5 - Math.sqrt((((270 * armPos) + 445.5) * ((270 * armPos) + 445.5)) + ((4 * armPos) * ((36450 * armPos) + 120135))))/(2*armPos);
+        shoulder_angle = armPos * 81.8;
         foggerRelay = compressor1.getState();
         fanRelay = valve1.getState();
         frontLinkageLimit = front_limit.getState();
@@ -582,4 +618,12 @@ public class Hello_Bees_Teleop extends OpMode
         visionPortal = builder.build();
         visionPortal.setProcessorEnabled(aprilTag, true);
     }   // end method initAprilTag()
+
+    private Position getRobotRelativeCoordinate(Position p){
+        Position coordsReoriented = p;//rotation_matrix * p;
+        coordsReoriented.x = coordsReoriented.x - X_CAM;
+        coordsReoriented.y = coordsReoriented.y - Y_CAM;
+        coordsReoriented.z = coordsReoriented.z - Z_CAM;
+        return coordsReoriented;
+    }
 }
