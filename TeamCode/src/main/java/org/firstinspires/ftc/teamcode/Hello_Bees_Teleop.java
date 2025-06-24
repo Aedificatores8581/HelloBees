@@ -55,7 +55,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import org.firstinspires.ftc.robotcore.external.matrices;
+import org.firstinspires.ftc.robotcore.external.matrices.*;
 
 
 import java.util.List;
@@ -140,8 +140,11 @@ public class Hello_Bees_Teleop extends OpMode
     final double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
     final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
+    double EXTENSION_MOTOR_OFFSET = 0;
+    double EXTENSION_ENCODER_TO_RADIANS = toRadians(537.7/360);
     final double MIN_EXTENSION_LENGTH = 10.25;
     final double EXTENSION_RANGE = 13.75;
+    double EXTENSION_ENCODER_TO_INCHES = 225/ EXTENSION_RANGE;
     final double MAX_EXTENSION_LENGTH = MIN_EXTENSION_LENGTH + EXTENSION_RANGE;
     //arm or shoulder measurements
     final double PIVOT_HEIGHT = 3.5;
@@ -149,10 +152,11 @@ public class Hello_Bees_Teleop extends OpMode
     final double ARM_LENGTH = 16.5;
     final double LINKAGE_LENGTH_1 = 12;
     final double LINKAGE_LENGTH_2 = 13;
+    double LINK_2_ATTACHMENT_HEIGHT = 0;
     final double SLIDER_HEIGHT = 1.7;
     final double TIP_TO_PIVOT_DISTANCE = 8;
-    final double RETRACTED_LINK_1_ANGLE = Math.atan2(SLIDER_HEIGHT, MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)+Math.acos((LINKAGE_LENGTH_1^2+SLIDER_HEIGHT^2+(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)^2-LINKAGE_LENGTH_2^2)/2/(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)/LINKAGE_LENGTH_1); 
-    //Position rotation_matrix;
+    final double RETRACTED_LINK_1_ANGLE = Math.atan2(SLIDER_HEIGHT, MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)+Math.acos((Math.pow(LINKAGE_LENGTH_1,2)+Math.pow(SLIDER_HEIGHT,2)+Math.pow(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE,2)-Math.pow(LINKAGE_LENGTH_2,2))/2/(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)/LINKAGE_LENGTH_1);
+    Position rotation_matrix;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
     List<AprilTagDetection> currentDetections;
@@ -167,7 +171,7 @@ public class Hello_Bees_Teleop extends OpMode
     boolean arm_to_AprilTag = false;
     AprilTagDetection currentAprilTag;
     Position robotRelCoords;
-
+    double arm_angle;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -175,7 +179,7 @@ public class Hello_Bees_Teleop extends OpMode
     public void init() {
         initAprilTag();
         rotation_matrix = new Position (DistanceUnit.INCH,-8, -7, 13, 0);
-        RETRACTED_LINK_1_ANGLE = asin(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2) + pow(SLIDER_HEIGHT,2)+ pow(LINKAGE_LENGTH_1,2)-pow(LINKAGE_LENGTH_2,2)) / (2* LINKAGE_LENGTH_1 * sqrt(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2)+ pow(SLIDER_HEIGHT,2))) - atan2((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE) , SLIDER_HEIGHT);	//radians
+        //RETRACTED_LINK_1_ANGLE = asin(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2) + pow(SLIDER_HEIGHT,2)+ pow(LINKAGE_LENGTH_1,2)-pow(LINKAGE_LENGTH_2,2)) / (2* LINKAGE_LENGTH_1 * sqrt(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2)+ pow(SLIDER_HEIGHT,2))) - atan2((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE) , SLIDER_HEIGHT);	//radians
 
         telemetry.addData("Status", "Initialized");
         rightdrive = hardwareMap.get(CRServo.class, "rightdrive");
@@ -644,36 +648,34 @@ private double[] getGeometricTargets(double x_robotrel, double y_robotrel, doubl
 
 	//what if the extension target is outside of its maximum length, and the arm can’t reach it?
 	//then the robot should point to the QR code and extend to the maximum length
-	if (Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) > MAX_EXTENSION_LENGTH + QR_distance_away and ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.cos(turret_angle)) ^ 2 + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.sin(turret_angle)) ^ 2 + (z_robotrel - z_0) ^ 2)) {
+	if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - z_0), 2)))) {
 
 		extension_length = EXTENSION_RANGE;
 		double x_pivot = x_robotrel - extension_length * Math.sin(turret_angle);
 		double y_pivot = y_robotrel - extension_length * Math.cos(turret_angle);
-		arm_angle = Math.atan2(z_robotrel - z0, x_pivot ^ 2 + y_pivot ^ 2);
+		arm_angle = Math.atan2(z_robotrel - z_0, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
 	}
 	//what if the target is in range of the extension, but out of range for the arm?
 	//then the arm should point directly up or down, and the extension should go directly under or above the location
-	else if ((z - z_0) / ARM_LENGTH > 1) {
+	else if ((z_robotrel - z_0) / ARM_LENGTH > 1) {
 		arm_angle = Math.PI / 2;
-		extension_length = Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) - MIN_EXTENSION_LENGTH;
+		extension_length = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 	//this one will likely never be used, and if the robot enters this state, something has gone wrong
-	else if ((z - z_0) / ARM_LENGTH < 1) {
+	else if ((z_robotrel - z_0) / ARM_LENGTH < 1) {
 		arm_angle = -Math.PI / 2;
-		extension_length = Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) - MIN_EXTENSION_LENGTH;
+		extension_length = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 
 	//if the target is in-range of both the arm and extension, calculate normally
 	else {
 		arm_angle = Math.asin((z_robotrel - z_0) / ARM_LENGTH);
 
-		extension_length = Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) - ARM_LENGTH * cos(arm_angle) - QR_distance_away - MIN_EXTENSION_LENGTH;
+		extension_length = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - ARM_LENGTH * cos(arm_angle) - QR_distance_away - MIN_EXTENSION_LENGTH;
 		//distance from qr to center of turret MINUS horizontal distance of the arm MINUS length of retracted extension MINUS desired distance from QR code
 	}
 
-	return {
-		turret_angle, extension_length, arm_angle
-	};
+	return new double[]{turret_angle, extension_length, arm_angle};
 }
 
 
@@ -688,7 +690,7 @@ private int getExtensionEncoderTarget(boolean isOldArm, double length_extended) 
 	//if we’re using the old arm, we need to account for the linkage
 	else {
 		double y_attach = LINK_2_ATTACHMENT_HEIGHT;
-		return (int)((Math.asin((x_attach ^ 2 + y_attach ^ 2 + LINKAGE_LENGTH_1 ^ 2 - LINKAGE_LENGTH_2 ^ 2) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(x_attach ^ 2 + y_attach ^ 2)) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE) / EXTENSION_ENCODER_TO_RADIANS);
+		return (int)((Math.asin((Math.pow(x_attach,2) + Math.pow(y_attach,2) + Math.pow(LINKAGE_LENGTH_1,2) - Math.pow(LINKAGE_LENGTH_2, 2)) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(Math.pow(x_attach ,2) + Math.pow(y_attach, 2))) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE) / EXTENSION_ENCODER_TO_RADIANS);
 	}
 }
 
@@ -701,8 +703,9 @@ private void automationTelemetryTest(){
             telemetry.addLine(String.format("robot relative marker position: ", robotRelCoords));
     }
     double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
-    telemetry.addLine(String.format("turret angle: ", toDegrees(target_values[0]));
-    telemetry.addLine(String.format("extension length: ", target_values[1]);
-    telemetry.addLine(String.format("turret angle: ", target_values[2]);
+    telemetry.addLine(String.format("turret angle: ", toDegrees(target_values[0])));
+    telemetry.addLine(String.format("extension length: ", target_values[1]));
+    telemetry.addLine(String.format("turret angle: ", target_values[2]));
 
+}
 }
