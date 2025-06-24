@@ -133,14 +133,14 @@ public class Hello_Bees_Teleop extends OpMode
     private final double ARM_ENCODER_TO_RADIANS = toRadians(ARM_ENCODER_IN_DEGREE);
     private final double QR_distance_away = 6; //desired distance away from QR code, inches
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
-    private Position cameraPosition = new Position(DistanceUnit.INCH,-8, -7, 13, 0); // old values, currently innacurate
+    private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0); // old values, currently innacurate
     Position cameraRelCoords;
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
     //Camera Pose
     final double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
     final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
-    double EXTENSION_MOTOR_OFFSET = 0;
+    double EXTENSION_MOTOR_OFFSET = 4.5;
     double EXTENSION_ENCODER_TO_RADIANS = toRadians(537.7/360);
     final double MIN_EXTENSION_LENGTH = 10.25;
     final double EXTENSION_RANGE = 13.75;
@@ -152,7 +152,7 @@ public class Hello_Bees_Teleop extends OpMode
     final double ARM_LENGTH = 16.5;
     final double LINKAGE_LENGTH_1 = 12;
     final double LINKAGE_LENGTH_2 = 13;
-    double LINK_2_ATTACHMENT_HEIGHT = 0;
+    double LINK_2_ATTACHMENT_HEIGHT = 1;
     final double SLIDER_HEIGHT = 1.7;
     final double TIP_TO_PIVOT_DISTANCE = 8;
     final double RETRACTED_LINK_1_ANGLE = Math.atan2(SLIDER_HEIGHT, MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)+Math.acos((Math.pow(LINKAGE_LENGTH_1,2)+Math.pow(SLIDER_HEIGHT,2)+Math.pow(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE,2)-Math.pow(LINKAGE_LENGTH_2,2))/2/(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)/LINKAGE_LENGTH_1);
@@ -283,17 +283,11 @@ public class Hello_Bees_Teleop extends OpMode
     }
 
     private void telemetry (){
-        telemetry.addLine(String.format("Auto: State %d Enabled %b Stowed %b Homed %b",automationState, armAutomation, armStowed, turretHomed));
-        telemetry.addLine(String.format("Link: Pos %d Front %b Rear %b Busy %b",(int) linkageMotorPosition,frontLinkageLimit, rearLinkageLimit, linkage.isBusy()));
-        telemetry.addLine(String.format("Fogger(False on): Fan %b Fog %b Pump (%.2f)", foggerRelay, fanRelay, pumpMotorPower));
-        telemetry.addLine(String.format("Arm Loc Turret: Pos %d Target %d Angle (%.1f)",(int)turretMotorPosition, turret_target, (turretMotorPosition/turret_ticks_in_degree)-93));
-        telemetry.addLine(String.format("Arm Loc Wrist: (%.2f) Shoulder: Raw (%.2f), Angle (%.1f)", wristServoPosition, armPos, shoulder_angle));
-        telemetry.addLine(String.format("Status: Run Time: %s Average Loop: %.0f", runtime.toString(), averageLoopTime));
-        telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
+        if(arm_to_AprilTag) automationTelemetryTest();
         telemetry.addData("# AprilTags Detected", currentDetections.size());
         for (AprilTagDetection detection : currentDetections) {
             if (detection.metadata != null) {
-                telemetry.addLine(String.format("\n==== (ID %d) %s", detection.id, detection.metadata.name));
+                telemetry.addLine(String.format("==== (ID %d) %s", detection.id, detection.metadata.name));
                 telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.robotPose.getPosition().x,
                         detection.robotPose.getPosition().y, detection.robotPose.getPosition().z));
                 telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)",
@@ -302,10 +296,17 @@ public class Hello_Bees_Teleop extends OpMode
             } else {
                 telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
                 telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
-            }
-        }
-        telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
-        telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
+            }}
+        telemetry.addLine(String.format("Auto: State %d Enabled %b Stowed %b Homed %b",automationState, armAutomation, armStowed, turretHomed));
+        telemetry.addLine(String.format("Link: Pos %d Front %b Rear %b Busy %b",(int) linkageMotorPosition,frontLinkageLimit, rearLinkageLimit, linkage.isBusy()));
+        telemetry.addLine(String.format("Fogger(False on): Fan %b Fog %b Pump (%.2f)", foggerRelay, fanRelay, pumpMotorPower));
+        telemetry.addLine(String.format("Arm Loc Turret: Pos %d Target %d Angle (%.1f)",(int)turretMotorPosition, turret_target, (turretMotorPosition/turret_ticks_in_degree)-93));
+        telemetry.addLine(String.format("Arm Loc Wrist: (%.2f) Shoulder: Raw (%.2f), Angle (%.1f)", wristServoPosition, armPos, shoulder_angle));
+        telemetry.addLine(String.format("Status: Run Time: %s Average Loop: %.0f", runtime.toString(), averageLoopTime));
+        telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
+
+        //telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
+        //telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
     }
     private void home_turret(){
         if(!turretHomed){
@@ -412,7 +413,7 @@ public class Hello_Bees_Teleop extends OpMode
         leftdriveMotorPower = Math.min(Math.max(gamepad1.right_stick_y * 0.3, -0.3), 0.3);
 
         //automate spray
-        if (gamepad1.x &&!ButtonX1block) {
+        if (gamepad1.x &&!ButtonX1block) { //moves arm to target positions
             ButtonX1block = true;
             automationState = 1;
             armAutomation = true;
@@ -425,17 +426,17 @@ public class Hello_Bees_Teleop extends OpMode
         else if (!gamepad1.x){
             ButtonX1block = false;
         }
-        if(gamepad1.b && !ButtonB1block){
+
+        arm_to_AprilTag = gamepad1.b;//test arm movement based on apriltags
+        /*
+        if(gamepad1.b && !ButtonB1block){ //test arm movement based on apriltags
             ButtonB1block = true;
-            linkageMotorPower = 1;
-            armAutomation = true;
-            linkage.setTargetPosition(-100);
-            linkage.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-            automationState = 50;
+            arm_to_AprilTag = true;
+            automationTelemetryTest();
         }
         else if (!gamepad1.b){
             ButtonB1block = false;
-        }
+        }*/
         if (gamepad1.y){ //turn off automation
             armAutomation = false;
             linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -643,39 +644,39 @@ public class Hello_Bees_Teleop extends OpMode
     }
 private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
 	double turret_angle = atan2(x_robotrel, y_robotrel);
-	double extension_length = 0;
-	double arm_length = 0;
+	double how_far_extend = 0;
+	double arm_angle_goal = 0;
 
 	//what if the extension target is outside of its maximum length, and the arm can’t reach it?
 	//then the robot should point to the QR code and extend to the maximum length
 	if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - z_0), 2)))) {
 
-		extension_length = EXTENSION_RANGE;
-		double x_pivot = x_robotrel - extension_length * Math.sin(turret_angle);
-		double y_pivot = y_robotrel - extension_length * Math.cos(turret_angle);
-		arm_angle = Math.atan2(z_robotrel - z_0, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
+        how_far_extend = EXTENSION_RANGE;
+		double x_pivot = x_robotrel - how_far_extend * Math.sin(turret_angle);
+		double y_pivot = y_robotrel - how_far_extend * Math.cos(turret_angle);
+        arm_angle_goal = Math.atan2(z_robotrel - z_0, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
 	}
 	//what if the target is in range of the extension, but out of range for the arm?
 	//then the arm should point directly up or down, and the extension should go directly under or above the location
 	else if ((z_robotrel - z_0) / ARM_LENGTH > 1) {
-		arm_angle = Math.PI / 2;
-		extension_length = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
+        arm_angle_goal = Math.PI / 2;
+        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 	//this one will likely never be used, and if the robot enters this state, something has gone wrong
 	else if ((z_robotrel - z_0) / ARM_LENGTH < 1) {
-		arm_angle = -Math.PI / 2;
-		extension_length = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
+        arm_angle_goal = -Math.PI / 2;
+        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 
 	//if the target is in-range of both the arm and extension, calculate normally
 	else {
 		arm_angle = Math.asin((z_robotrel - z_0) / ARM_LENGTH);
 
-		extension_length = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - ARM_LENGTH * cos(arm_angle) - QR_distance_away - MIN_EXTENSION_LENGTH;
+        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - ARM_LENGTH * cos(arm_angle) - QR_distance_away - MIN_EXTENSION_LENGTH;
 		//distance from qr to center of turret MINUS horizontal distance of the arm MINUS length of retracted extension MINUS desired distance from QR code
 	}
 
-	return new double[]{turret_angle, extension_length, arm_angle};
+	return new double[]{turret_angle, how_far_extend, arm_angle_goal};
 }
 
 
@@ -695,17 +696,16 @@ private int getExtensionEncoderTarget(boolean isOldArm, double length_extended) 
 }
 
 private void automationTelemetryTest(){
-    if(arm_to_AprilTag && !currentDetections.isEmpty()){
-            currentAprilTag = currentDetections.get(0);
-            cameraRelCoords = currentAprilTag.robotPose.getPosition();
-            telemetry.addLine(String.format("camera relative marker position: ", cameraRelCoords));
-            robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
-            telemetry.addLine(String.format("robot relative marker position: ", robotRelCoords));
+    if(!currentDetections.isEmpty()) {
+        currentAprilTag = currentDetections.get(0);
+        cameraRelCoords = currentAprilTag.robotPose.getPosition();
+        telemetry.addData("camera relative marker position: ", cameraRelCoords);
+        robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
+        telemetry.addData("robot relative marker position: ", robotRelCoords);
+        double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
+        telemetry.addData("turret angle: ", toDegrees(target_values[0]));
+        telemetry.addData("extension length: ", target_values[1]);
+        telemetry.addData("turret angle: ", target_values[2]);
     }
-    double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
-    telemetry.addLine(String.format("turret angle: ", toDegrees(target_values[0])));
-    telemetry.addLine(String.format("extension length: ", target_values[1]));
-    telemetry.addLine(String.format("turret angle: ", target_values[2]));
-
 }
 }
