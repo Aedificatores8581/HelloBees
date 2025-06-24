@@ -55,6 +55,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.robotcore.external.matrices;
+
+
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -78,6 +81,7 @@ public class Hello_Bees_Teleop extends OpMode
     private DigitalChannel rear_limit;
     private CRServo shoulder;
     private AnalogInput pot1;
+    
     boolean AutoBlock;
     boolean PumpButtonBlock;
     boolean ButtonBlockValuePump;
@@ -122,31 +126,33 @@ public class Hello_Bees_Teleop extends OpMode
     private PIDController shoulder_controller;
     public static double shoulder_p = 2, shoulder_i = 0, shoulder_d = .1;
     public static double p =0.001, i=0, d = 0.00003;
+    
     private final double turret_ticks_in_degree = 64.47;
     private final double TURRET_ENCODER_TO_RADIANS = toRadians(turret_ticks_in_degree);
     private final double ARM_ENCODER_IN_DEGREE = .0122222;
     private final double ARM_ENCODER_TO_RADIANS = toRadians(ARM_ENCODER_IN_DEGREE);
+    private final double QR_distance_away = 6; //desired distance away from QR code, inches
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
-    private Position cameraPosition = new Position(DistanceUnit.INCH,-8, -7, 13, 0);
+    private Position cameraPosition = new Position(DistanceUnit.INCH,-8, -7, 13, 0); // old values, currently innacurate
     Position cameraRelCoords;
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
     //Camera Pose
-    double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
-    double PITCH_CAM = 0.785398, YAW_CAM = -1.5708, ROLL_CAM = 0;
+    final double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
+    final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
-    double MIN_EXTENSION_LENGTH = 10.25;
-    double EXTENSION_RANGE = 13.75;
-    double MAX_EXTENSION_LENGTH = MIN_EXTENSION_LENGTH + EXTENSION_RANGE;
+    final double MIN_EXTENSION_LENGTH = 10.25;
+    final double EXTENSION_RANGE = 13.75;
+    final double MAX_EXTENSION_LENGTH = MIN_EXTENSION_LENGTH + EXTENSION_RANGE;
     //arm or shoulder measurements
-    double PIVOT_HEIGHT = 3.5;
-    double z_0 = X_CAM - PIVOT_HEIGHT;
-    double ARM_LENGTH = 16.5;
-    double LINKAGE_LENGTH_1 = 12;
-    double LINKAGE_LENGTH_2 = 13;
-    double SLIDER_HEIGHT = 1.7;
-    double TIP_TO_PIVOT_DISTANCE = 8;
-    double RETRACTED_LINK_1_ANGLE;
-    Position rotation_matrix;
+    final double PIVOT_HEIGHT = 3.5;
+    final double z_0 = X_CAM - PIVOT_HEIGHT;
+    final double ARM_LENGTH = 16.5;
+    final double LINKAGE_LENGTH_1 = 12;
+    final double LINKAGE_LENGTH_2 = 13;
+    final double SLIDER_HEIGHT = 1.7;
+    final double TIP_TO_PIVOT_DISTANCE = 8;
+    final double RETRACTED_LINK_1_ANGLE = Math.atan2(SLIDER_HEIGHT, MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)+Math.acos((LINKAGE_LENGTH_1^2+SLIDER_HEIGHT^2+(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)^2-LINKAGE_LENGTH_2^2)/2/(MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE)/LINKAGE_LENGTH_1); 
+    //Position rotation_matrix;
     private AprilTagProcessor aprilTag;
     private VisionPortal visionPortal;
     List<AprilTagDetection> currentDetections;
@@ -169,7 +175,6 @@ public class Hello_Bees_Teleop extends OpMode
     public void init() {
         initAprilTag();
         rotation_matrix = new Position (DistanceUnit.INCH,-8, -7, 13, 0);
-    //[[cos(YAW_CAM)*cos(PITCH_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*sin(ROLL_CAM) + cos(YAW_CAM)*cos(ROLL_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*cos(ROLL_CAM) - cos(YAW_CAM)*sin(ROLL_CAM)]], [[sin(YAW_CAM)*cos(PITCH_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*sin(ROLL_CAM) + cos(YAW_CAM)*cos(ROLL_CAM)], [sin(YAW_CAM)*sin(PITCH_CAM)*cos(ROLL_CAM) - cos(YAW_CAM)*sin(ROLL_CAM)]], [[-sin(PITCH_CAM)], [cos(PITCH_CAM)*sin(ROLL_CAM)], [cos(PITCH_CAM)*cos(ROLL_CAM)]];
         RETRACTED_LINK_1_ANGLE = asin(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2) + pow(SLIDER_HEIGHT,2)+ pow(LINKAGE_LENGTH_1,2)-pow(LINKAGE_LENGTH_2,2)) / (2* LINKAGE_LENGTH_1 * sqrt(pow((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE),2)+ pow(SLIDER_HEIGHT,2))) - atan2((MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE) , SLIDER_HEIGHT);	//radians
 
         telemetry.addData("Status", "Initialized");
@@ -248,7 +253,7 @@ public class Hello_Bees_Teleop extends OpMode
         if(arm_to_AprilTag && !currentDetections.isEmpty()){
             currentAprilTag = currentDetections.get(0);
             cameraRelCoords = currentAprilTag.robotPose.getPosition();
-            robotRelCoords = getRobotRelativeCoordinate (cameraRelCoords);
+            robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
             //turret_target_AprilTag = ;
         }
         actuatorCommands();
@@ -620,10 +625,84 @@ public class Hello_Bees_Teleop extends OpMode
     }   // end method initAprilTag()
 
     private Position getRobotRelativeCoordinate(Position p){
-        Position coordsReoriented = p;//rotation_matrix * p;
+        Position coordsReoriented = p;
+    //since the camera is currently (6/24) only rotated in yaw, I've done this for now, but we should have a matrix implementation next
+        coordsReoriented.x = p.x * Math.cos(-YAW_CAM)- p.y * Math.sin(-YAW_CAM);
+        coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
+
+        //yawMatrix.multiply(pitchMatrix).multiply(rollMatrix).transform(new VectorF());
+
         coordsReoriented.x = coordsReoriented.x - X_CAM;
         coordsReoriented.y = coordsReoriented.y - Y_CAM;
         coordsReoriented.z = coordsReoriented.z - Z_CAM;
         return coordsReoriented;
     }
+private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
+	double turret_angle = atan2(x_robotrel, y_robotrel);
+	double extension_length = 0;
+	double arm_length = 0;
+
+	//what if the extension target is outside of its maximum length, and the arm can’t reach it?
+	//then the robot should point to the QR code and extend to the maximum length
+	if (Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) > MAX_EXTENSION_LENGTH + QR_distance_away and ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.cos(turret_angle)) ^ 2 + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.sin(turret_angle)) ^ 2 + (z_robotrel - z_0) ^ 2)) {
+
+		extension_length = EXTENSION_RANGE;
+		double x_pivot = x_robotrel - extension_length * Math.sin(turret_angle);
+		double y_pivot = y_robotrel - extension_length * Math.cos(turret_angle);
+		arm_angle = Math.atan2(z_robotrel - z0, x_pivot ^ 2 + y_pivot ^ 2);
+	}
+	//what if the target is in range of the extension, but out of range for the arm?
+	//then the arm should point directly up or down, and the extension should go directly under or above the location
+	else if ((z - z_0) / ARM_LENGTH > 1) {
+		arm_angle = Math.PI / 2;
+		extension_length = Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) - MIN_EXTENSION_LENGTH;
+	}
+	//this one will likely never be used, and if the robot enters this state, something has gone wrong
+	else if ((z - z_0) / ARM_LENGTH < 1) {
+		arm_angle = -Math.PI / 2;
+		extension_length = Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) - MIN_EXTENSION_LENGTH;
+	}
+
+	//if the target is in-range of both the arm and extension, calculate normally
+	else {
+		arm_angle = Math.asin((z_robotrel - z_0) / ARM_LENGTH);
+
+		extension_length = Math.sqrt(x_robotrel ^ 2 + y_robotrel ^ 2) - ARM_LENGTH * cos(arm_angle) - QR_distance_away - MIN_EXTENSION_LENGTH;
+		//distance from qr to center of turret MINUS horizontal distance of the arm MINUS length of retracted extension MINUS desired distance from QR code
+	}
+
+	return {
+		turret_angle, extension_length, arm_angle
+	};
+}
+
+
+private int getExtensionEncoderTarget(boolean isOldArm, double length_extended) {
+
+	//horizontal distance between the motor and the link 2 attachment point
+	double x_attach = length_extended + MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE - EXTENSION_MOTOR_OFFSET;
+
+	//if we’re using the new arm, we can just convert inches to encoder ticks
+	if (!isOldArm)
+		return (int)(x_attach / EXTENSION_ENCODER_TO_INCHES);
+	//if we’re using the old arm, we need to account for the linkage
+	else {
+		double y_attach = LINK_2_ATTACHMENT_HEIGHT;
+		return (int)((Math.asin((x_attach ^ 2 + y_attach ^ 2 + LINKAGE_LENGTH_1 ^ 2 - LINKAGE_LENGTH_2 ^ 2) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(x_attach ^ 2 + y_attach ^ 2)) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE) / EXTENSION_ENCODER_TO_RADIANS);
+	}
+}
+
+private void automationTelemetryTest(){
+    if(arm_to_AprilTag && !currentDetections.isEmpty()){
+            currentAprilTag = currentDetections.get(0);
+            cameraRelCoords = currentAprilTag.robotPose.getPosition();
+            telemetry.addLine(String.format("camera relative marker position: ", cameraRelCoords));
+            robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
+            telemetry.addLine(String.format("robot relative marker position: ", robotRelCoords));
+    }
+    double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
+    telemetry.addLine(String.format("turret angle: ", toDegrees(target_values[0]));
+    telemetry.addLine(String.format("extension length: ", target_values[1]);
+    telemetry.addLine(String.format("turret angle: ", target_values[2]);
+
 }
