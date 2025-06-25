@@ -630,12 +630,11 @@ public class Hello_Bees_Teleop extends OpMode
     }   // end method initAprilTag()
 
     private Position getRobotRelativeCoordinate(Position p){
-        Position coordsReoriented = p;
+        Position coordsReoriented = new Position();
     //since the camera is currently (6/24) only rotated in yaw, I've done this for now, but we should have a matrix implementation next
         coordsReoriented.x = p.x * Math.cos(-YAW_CAM)- p.y * Math.sin(-YAW_CAM);
         coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
-
-        //yawMatrix.multiply(pitchMatrix).multiply(rollMatrix).transform(new VectorF());
+	coordsReoriented.z = p.z;
 
         coordsReoriented.x = coordsReoriented.x - X_CAM;
         coordsReoriented.y = coordsReoriented.y - Y_CAM;
@@ -651,10 +650,10 @@ private double[] getGeometricTargets(double x_robotrel, double y_robotrel, doubl
 	//then the robot should point to the QR code and extend to the maximum length
 	if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - z_0), 2)))) {
 
-        how_far_extend = EXTENSION_RANGE;
-		double x_pivot = x_robotrel - how_far_extend * Math.sin(turret_angle);
-		double y_pivot = y_robotrel - how_far_extend * Math.cos(turret_angle);
-        arm_angle_goal = Math.atan2(z_robotrel - z_0, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
+        	how_far_extend = EXTENSION_RANGE;
+		double x_pivot = x_robotrel - how_far_extend * Math.cos(Math.PI/2 + turret_angle);
+		double y_pivot = y_robotrel - how_far_extend * Math.sin(Math.PI/2 + turret_angle);
+        	arm_angle_goal = Math.atan2(z_robotrel - z_0, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
 	}
 	//what if the target is in range of the extension, but out of range for the arm?
 	//then the arm should point directly up or down, and the extension should go directly under or above the location
@@ -703,8 +702,8 @@ private void automationTelemetryTest(){
         robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
         telemetry.addData("robot relative marker position: ", robotRelCoords);
         double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
-        telemetry.addData("turret angle: ", toDegrees(target_values[0]));
-        telemetry.addData("extension length: ", target_values[1]);
-        telemetry.addData("turret angle: ", target_values[2]);
+        telemetry.addData("turret angle (deg): ", toDegrees(target_values[0]));
+        telemetry.addData("extension length (in): ", target_values[1]);
+        telemetry.addData("arm angle (deg): ", toDegrees(target_values[2]));
 }
 }
