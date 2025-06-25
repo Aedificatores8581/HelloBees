@@ -172,6 +172,9 @@ public class Hello_Bees_Teleop extends OpMode
     AprilTagDetection currentAprilTag;
     Position robotRelCoords;
     double arm_angle;
+    Position aprilTag_Target_Left = new Position(DistanceUnit.INCH,0, 0, 0, 0); //Tag 584 "Jonah"
+    Position aprilTag_Target_Right = new Position(DistanceUnit.INCH,0, 0, 0, 0); //Tag 583 "Nemo"
+
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -285,18 +288,10 @@ public class Hello_Bees_Teleop extends OpMode
     private void telemetry (){
         if(arm_to_AprilTag) automationTelemetryTest();
         telemetry.addData("# AprilTags Detected", currentDetections.size());
-        for (AprilTagDetection detection : currentDetections) {
-            if (detection.metadata != null) {
-                telemetry.addLine(String.format("==== (ID %d) %s", detection.id, detection.metadata.name));
-                telemetry.addLine(String.format("XYZ %6.1f %6.1f %6.1f  (inch)", detection.robotPose.getPosition().x,
-                        detection.robotPose.getPosition().y, detection.robotPose.getPosition().z));
-                telemetry.addLine(String.format("PRY %6.1f %6.1f %6.1f  (deg)",
-                        detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES), detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES),
-                        detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES)));
-            } else {
-                telemetry.addLine(String.format("\n==== (ID %d) Unknown", detection.id));
-                telemetry.addLine(String.format("Center %6.0f %6.0f   (pixels)", detection.center.x, detection.center.y));
-            }}
+        telemetry.addLine(String.format("Left %6.1f %6.1f %6.1f  (inch)", aprilTag_Target_Left.x,
+                aprilTag_Target_Left.y, aprilTag_Target_Left.z));
+        telemetry.addLine(String.format("Right %6.1f %6.1f %6.1f  (inch)", aprilTag_Target_Right.x,
+                aprilTag_Target_Right.y, aprilTag_Target_Right.z));
         telemetry.addLine(String.format("Auto: State %d Enabled %b Stowed %b Homed %b",automationState, armAutomation, armStowed, turretHomed));
         telemetry.addLine(String.format("Link: Pos %d Front %b Rear %b Busy %b",(int) linkageMotorPosition,frontLinkageLimit, rearLinkageLimit, linkage.isBusy()));
         telemetry.addLine(String.format("Fogger(False on): Fan %b Fog %b Pump (%.2f)", foggerRelay, fanRelay, pumpMotorPower));
@@ -317,7 +312,7 @@ public class Hello_Bees_Teleop extends OpMode
             }
         }
     }
-    private void sensorRead (){
+    private void sensorRead () {
         //shoulder position
         armPos = pot1.getVoltage();
         //shoulder_angle = (270*armPos +445.5 - Math.sqrt((((270 * armPos) + 445.5) * ((270 * armPos) + 445.5)) + ((4 * armPos) * ((36450 * armPos) + 120135))))/(2*armPos);
@@ -330,14 +325,14 @@ public class Hello_Bees_Teleop extends OpMode
         turretMotorPosition = turret.getCurrentPosition();
         linkageMotorPosition = linkage.getCurrentPosition();
         currentDetections = aprilTag.getDetections();
-        if (!currentDetections.isEmpty()) {
-            AprilTagDetection detection = currentDetections.get(0);
-            detectedTageID = detection.id;
-            detectedPosition = new Position (DistanceUnit.INCH, detection.robotPose.getPosition().x, detection.robotPose.getPosition().y,
-                    detection.robotPose.getPosition().z, 0);
-            detectedYPRA = new YawPitchRollAngles(AngleUnit.DEGREES, detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),
-                    detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES), detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES),
-                    0);
+        for (AprilTagDetection detection : currentDetections) {
+            if (detection.metadata != null) {
+                detectedTageID = detection.id;
+                if(detection.id == 584) aprilTag_Target_Left = detection.robotPose.getPosition();
+                if(detection.id == 583) aprilTag_Target_Right = detection.robotPose.getPosition();
+                //detectedPosition = new Position(DistanceUnit.INCH, detection.robotPose.getPosition().x, detection.robotPose.getPosition().y,detection.robotPose.getPosition().z, 0);
+                //detectedYPRA = new YawPitchRollAngles(AngleUnit.DEGREES, detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES), detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES), 0);
+            }
         }
     }
 
@@ -428,6 +423,11 @@ public class Hello_Bees_Teleop extends OpMode
         }
 
         arm_to_AprilTag = gamepad1.b;//test arm movement based on apriltags
+
+        if(gamepad1.dpad_left){//load test values for vision
+            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-15, 4, -2,0);
+            aprilTag_Target_Right = new Position(DistanceUnit.INCH,-20, 10, -4,0);
+        }
         /*
         if(gamepad1.b && !ButtonB1block){ //test arm movement based on apriltags
             ButtonB1block = true;
@@ -611,7 +611,7 @@ public class Hello_Bees_Teleop extends OpMode
         // Decimation = 3 ..  Detect 2" Tag from 4  feet away at 30 Frames Per Second (default)
         // Decimation = 3 ..  Detect 5" Tag from 10 feet away at 30 Frames Per Second (default)
         // Note: Decimation can be changed on-the-fly to adapt during a match.
-        aprilTag.setDecimation(1);
+        //aprilTag.setDecimation(1);
 
         // Create the vision portal by using a builder.
         VisionPortal.Builder builder = new VisionPortal.Builder();
@@ -696,9 +696,9 @@ private int getExtensionEncoderTarget(boolean isOldArm, double length_extended) 
 }
 
 private void automationTelemetryTest(){
-    if(!currentDetections.isEmpty()) {
-        currentAprilTag = currentDetections.get(0);
-        cameraRelCoords = currentAprilTag.robotPose.getPosition();
+        //currentAprilTag = currentDetections.get(0);
+        //cameraRelCoords = currentAprilTag.robotPose.getPosition();
+        cameraRelCoords = aprilTag_Target_Left;
         telemetry.addData("camera relative marker position: ", cameraRelCoords);
         robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
         telemetry.addData("robot relative marker position: ", robotRelCoords);
@@ -706,6 +706,5 @@ private void automationTelemetryTest(){
         telemetry.addData("turret angle: ", toDegrees(target_values[0]));
         telemetry.addData("extension length: ", target_values[1]);
         telemetry.addData("turret angle: ", target_values[2]);
-    }
 }
 }
