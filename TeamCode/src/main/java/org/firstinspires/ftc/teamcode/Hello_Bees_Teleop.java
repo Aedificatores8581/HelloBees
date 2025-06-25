@@ -148,7 +148,7 @@ public class Hello_Bees_Teleop extends OpMode
     final double MAX_EXTENSION_LENGTH = MIN_EXTENSION_LENGTH + EXTENSION_RANGE;
     //arm or shoulder measurements
     final double PIVOT_HEIGHT = 3.5;
-    final double z_0 = X_CAM - PIVOT_HEIGHT;
+    //final double z_0 = Z_CAM - PIVOT_HEIGHT;
     final double ARM_LENGTH = 16.5;
     final double LINKAGE_LENGTH_1 = 12;
     final double LINKAGE_LENGTH_2 = 13;
@@ -642,36 +642,36 @@ public class Hello_Bees_Teleop extends OpMode
         return coordsReoriented;
     }
 private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
-	double turret_angle = atan2(x_robotrel, y_robotrel);
+	double turret_angle = Math.atan2(y_robotrel, x_robotrel); //subtracting angle because theta is defined on the y-axis
 	double how_far_extend = 0;
 	double arm_angle_goal = 0;
 
 	//what if the extension target is outside of its maximum length, and the arm can’t reach it?
-	//then the robot should point to the QR code and extend to the maximum length
-	if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - z_0), 2)))) {
+	//then the arm should point to the QR code and extend to the maximum length
+	if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - PIVOT_HEIGHT), 2)))) {
 
         	how_far_extend = EXTENSION_RANGE;
-		double x_pivot = x_robotrel - how_far_extend * Math.cos(Math.PI/2 + turret_angle);
-		double y_pivot = y_robotrel - how_far_extend * Math.sin(Math.PI/2 + turret_angle);
-        	arm_angle_goal = Math.atan2(z_robotrel - z_0, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
+		double x_pivot = x_robotrel - MAX_EXTENSION_LENGTH * Math.cos(turret_angle);
+		double y_pivot = y_robotrel - MAX_EXTENSION_LENGTH * Math.sin(turret_angle);
+        	arm_angle_goal = Math.atan2(z_robotrel - PIVOT_HEIGHT, Math.pow(x_pivot, 2) + Math.pow(y_pivot,2));
 	}
 	//what if the target is in range of the extension, but out of range for the arm?
 	//then the arm should point directly up or down, and the extension should go directly under or above the location
-	else if ((z_robotrel - z_0) / ARM_LENGTH > 1) {
-        arm_angle_goal = Math.PI / 2;
-        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
+	else if ((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH > 1) {
+        	arm_angle_goal = Math.PI / 2;
+        	how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 	//this one will likely never be used, and if the robot enters this state, something has gone wrong
-	else if ((z_robotrel - z_0) / ARM_LENGTH < 1) {
-        arm_angle_goal = -Math.PI / 2;
-        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
+	else if ((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH < 1) {
+        	arm_angle_goal = -Math.PI / 2;
+        	how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 
 	//if the target is in-range of both the arm and extension, calculate normally
 	else {
-		arm_angle = Math.asin((z_robotrel - z_0) / ARM_LENGTH);
+		arm_angle = Math.asin((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH);
 
-        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - ARM_LENGTH * cos(arm_angle) - QR_distance_away - MIN_EXTENSION_LENGTH;
+        how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - ARM_LENGTH * cos(arm_angle) - MIN_EXTENSION_LENGTH - QR_distance_away;
 		//distance from qr to center of turret MINUS horizontal distance of the arm MINUS length of retracted extension MINUS desired distance from QR code
 	}
 
