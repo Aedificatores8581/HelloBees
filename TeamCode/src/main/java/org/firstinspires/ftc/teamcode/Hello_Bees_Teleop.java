@@ -662,7 +662,7 @@ private double[] getGeometricTargets(double x_robotrel, double y_robotrel, doubl
         	how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
 	//this one will likely never be used, and if the robot enters this state, something has gone wrong
-	else if ((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH < 1) {
+	else if ((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH < -1) {
         	arm_angle_goal = -Math.PI / 2;
         	how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
 	}
