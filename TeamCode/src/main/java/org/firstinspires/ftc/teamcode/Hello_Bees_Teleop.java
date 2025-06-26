@@ -630,15 +630,15 @@ public class Hello_Bees_Teleop extends OpMode
     }   // end method initAprilTag()
 
     private Position getRobotRelativeCoordinate(Position p){
-        Position coordsReoriented = new Position();
+        Position coordsReoriented = new Position(DistanceUnit.INCH, 0, 0, 0, System.nanoTime());
     //since the camera is currently (6/24) only rotated in yaw, I've done this for now, but we should have a matrix implementation next
         coordsReoriented.x = p.x * Math.cos(-YAW_CAM)- p.y * Math.sin(-YAW_CAM);
         coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
 	coordsReoriented.z = p.z;
 
-        coordsReoriented.x = coordsReoriented.x - X_CAM;
-        coordsReoriented.y = coordsReoriented.y - Y_CAM;
-        coordsReoriented.z = coordsReoriented.z - Z_CAM;
+        coordsReoriented.x = coordsReoriented.x + X_CAM;
+        coordsReoriented.y = coordsReoriented.y + Y_CAM;
+        coordsReoriented.z = coordsReoriented.z + Z_CAM;
         return coordsReoriented;
     }
 private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
@@ -678,21 +678,26 @@ private double[] getGeometricTargets(double x_robotrel, double y_robotrel, doubl
 	return new double[]{turret_angle, how_far_extend, arm_angle_goal};
 }
 
-
 private int getExtensionEncoderTarget(boolean isOldArm, double length_extended) {
-
-	//horizontal distance between the motor and the link 2 attachment point
-	double x_attach = length_extended + MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE - EXTENSION_MOTOR_OFFSET;
-
 	//if we’re using the new arm, we can just convert inches to encoder ticks
 	if (!isOldArm)
-		return (int)(x_attach / EXTENSION_ENCODER_TO_INCHES);
+		return (int)(length_extended / EXTENSION_ENCODER_TO_INCHES);
 	//if we’re using the old arm, we need to account for the linkage
 	else {
+		//horizontal distance between the motor and the link 2 attachment point
+		double x_attach = length_extended + MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE + EXTENSION_MOTOR_OFFSET;
 		double y_attach = LINK_2_ATTACHMENT_HEIGHT;
-		return (int)((Math.asin((Math.pow(x_attach,2) + Math.pow(y_attach,2) + Math.pow(LINKAGE_LENGTH_1,2) - Math.pow(LINKAGE_LENGTH_2, 2)) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(Math.pow(x_attach ,2) + Math.pow(y_attach, 2))) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE) / EXTENSION_ENCODER_TO_RADIANS);
+		
+		double motor_angle = Math.abs(Math.asin((Math.pow(x_attach,2) + Math.pow(y_attach,2) + Math.pow(LINKAGE_LENGTH_1,2) - Math.pow(LINKAGE_LENGTH_2, 2)) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(Math.pow(x_attach ,2) + Math.pow(y_attach, 2))) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE)
+		//this value assumes 
+		return (int)(motor_angle / EXTENSION_ENCODER_TO_RADIANS);
 	}
 }
+
+//placeholder functions for moving the sprayer to position
+private void rotateTurret(double angleTarget){}
+private void extendArm(double distanceTarget){}
+private void rotateArm(double angleTarget){}
 
 private void automationTelemetryTest(){
         //currentAprilTag = currentDetections.get(0);
