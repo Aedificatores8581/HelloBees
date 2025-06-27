@@ -422,7 +422,8 @@ public class Hello_Bees_Teleop extends OpMode
         arm_to_AprilTag = gamepad1.b;//test arm movement based on apriltags
 
         if(gamepad1.dpad_left){//load test values for vision
-            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-15, 4, -2,0);
+            //Axes orientation: +x right, +y forward, +z upward
+            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-21, 13.5, -6,0);
             aprilTag_Target_Right = new Position(DistanceUnit.INCH,-20, 10, -4,0);
         }
         /*

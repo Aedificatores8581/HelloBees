@@ -15,6 +15,7 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -178,7 +179,7 @@ public class Hello_Bees_Demo extends OpMode {
         pot1 = hardwareMap.get(AnalogInput.class, "pot1");
 
         rightdrive.setDirection(CRServo.Direction.REVERSE);
-        leftdrive.setDirection(CRServo.Direction.REVERSE);
+        leftdrive.setDirection(CRServo.Direction.FORWARD);
         wrist.setPosition(0.5);
         valve1.setMode(DigitalChannel.Mode.INPUT);
         linkage.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -246,7 +247,7 @@ public class Hello_Bees_Demo extends OpMode {
                     rightdriveMotorPower = 0;
                 }
             } else {
-                automationState = 1;
+                automationState = 99;
                 armAutomation = true;
             }
         }
@@ -512,7 +513,7 @@ public class Hello_Bees_Demo extends OpMode {
                 armAutomation = false;
             }
         }
-        else if(automationState == 99){
+        else if(automationState == 99){ //set to this state to home the turret
             automationState = 98;
             shoulder_target = armPos;
             turret_target = (int) turretMotorPosition;
@@ -529,7 +530,8 @@ public class Hello_Bees_Demo extends OpMode {
             }
         }
         else if(automationState == 97){
-            if(!rearLinkageLimit && (abs(turret_target - turretMotorPosition))<50  && armPos> shoulder_stowed - .05 && armPos < shoulder_stowed +.05){
+            if(!rearLinkageLimit && !((abs(turret_stowed - turretMotorPosition)) > 100) && !(armPos < shoulder_stowed - .05) && !(armPos > shoulder_stowed + .05)){
+                //!rearLinkageLimit && (abs(turret_target - turretMotorPosition))<50  && armPos> shoulder_stowed - .05 && armPos < shoulder_stowed +.05 old exit state 97 case
                 armStowed = true;
                 automationState = 0;
                 armAutomation = false;
