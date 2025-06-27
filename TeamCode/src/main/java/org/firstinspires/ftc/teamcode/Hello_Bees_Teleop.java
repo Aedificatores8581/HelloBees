@@ -135,9 +135,6 @@ public class Hello_Bees_Teleop extends OpMode
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0); // old values, currently innacurate
     Position cameraRelCoords;
-    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
-    //Camera Pose
-    final double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
     final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
     double EXTENSION_MOTOR_OFFSET = 4.5;
@@ -594,7 +591,7 @@ public class Hello_Bees_Teleop extends OpMode
                 //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
                 //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-                .setCameraPose(cameraPosition, cameraOrientation)
+                .setCameraPose(cameraPosition, Constants.cameraOrientation)
 
                 // == CAMERA CALIBRATION ==
                 // If you do not manually specify calibration parameters, the SDK will attempt
@@ -636,9 +633,9 @@ public class Hello_Bees_Teleop extends OpMode
         coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
 	coordsReoriented.z = p.z;
 
-        coordsReoriented.x = coordsReoriented.x + X_CAM;
-        coordsReoriented.y = coordsReoriented.y + Y_CAM;
-        coordsReoriented.z = coordsReoriented.z + Z_CAM;
+        coordsReoriented.x = coordsReoriented.x + Constants.X_CAM;
+        coordsReoriented.y = coordsReoriented.y + Constants.Y_CAM;
+        coordsReoriented.z = coordsReoriented.z + Constants.Z_CAM;
         return coordsReoriented;
     }
 private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
@@ -648,7 +645,7 @@ private double[] getGeometricTargets(double x_robotrel, double y_robotrel, doubl
 
 	//what if the extension target is outside of its maximum length, and the arm can’t reach it?
 	//then the arm should point to the QR code and extend to the maximum length
-	if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - PIVOT_HEIGHT), 2)))) {
+	if (Math.sqrt(Math.pow(x_robotrel, 2)+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - PIVOT_HEIGHT), 2)))) {
 
         	how_far_extend = EXTENSION_RANGE;
 		double x_pivot = x_robotrel - MAX_EXTENSION_LENGTH * Math.cos(turret_angle);
@@ -688,7 +685,7 @@ private int getExtensionEncoderTarget(boolean isOldArm, double length_extended) 
 		double x_attach = length_extended + MIN_EXTENSION_LENGTH - TIP_TO_PIVOT_DISTANCE + EXTENSION_MOTOR_OFFSET;
 		double y_attach = LINK_2_ATTACHMENT_HEIGHT;
 		
-		double motor_angle = Math.abs(Math.asin((Math.pow(x_attach,2) + Math.pow(y_attach,2) + Math.pow(LINKAGE_LENGTH_1,2) - Math.pow(LINKAGE_LENGTH_2, 2)) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(Math.pow(x_attach ,2) + Math.pow(y_attach, 2))) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE)
+		double motor_angle = Math.abs(Math.asin((Math.pow(x_attach,2) + Math.pow(y_attach,2) + Math.pow(LINKAGE_LENGTH_1,2) - Math.pow(LINKAGE_LENGTH_2, 2)) / (2 * LINKAGE_LENGTH_1 * Math.sqrt(Math.pow(x_attach ,2) + Math.pow(y_attach, 2))) - Math.atan2(x_attach, y_attach)) - RETRACTED_LINK_1_ANGLE);
 		//this value assumes 
 		return (int)(motor_angle / EXTENSION_ENCODER_TO_RADIANS);
 	}

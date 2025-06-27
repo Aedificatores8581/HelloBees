@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Math.abs;
-import static java.lang.Math.atan2;
 import static java.lang.Math.cos;
 import static java.lang.Math.toDegrees;
 import static java.lang.Math.toRadians;
@@ -10,7 +9,6 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.arcrobotics.ftclib.controller.PIDController;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.AnalogInput;
@@ -23,7 +21,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
@@ -31,7 +28,6 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -109,9 +105,6 @@ public class Hello_Bees_Demo extends OpMode {
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0); // old values, currently innacurate
     Position cameraRelCoords;
-    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,45, -90, 0, 0);
-    //Camera Pose
-    final double X_CAM = -14.5, Y_CAM = -9, Z_CAM= 17;
     final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
     double EXTENSION_MOTOR_OFFSET = 4.5;
@@ -152,11 +145,14 @@ public class Hello_Bees_Demo extends OpMode {
 
     // Variables for Automated Demo
     boolean movingForward;
-    ElapsedTime moveForwardETime;
-    double moveForwardTime = 1;
-    double scanForTagsTime = 3;
-    double movingPauseTime = 0;
+    ElapsedTime actionElapsedTime = new ElapsedTime(); // A timer to check if the robot has waited the set amount of time
+    double moveForwardTime = 1; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
+    double scanForTagsTime = 3; // How long (in seconds) the robot stops for to look for an april tag
+    double movingPauseTime = 0; // Variable for how long the robot is currently waiting for to switch to the next task
     boolean armOut = false;
+
+    boolean seesLeftTag = false;
+    boolean seesRightTag = false;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -197,7 +193,7 @@ public class Hello_Bees_Demo extends OpMode {
         turret_controller = new PIDController(p, i ,d);
         shoulder_controller = new PIDController(shoulder_p, shoulder_i, shoulder_d);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        telemetry.addData("Status", "Initialized");
+        telemetry.addLine("Initialized");
         loopTimes.offer(runtime.milliseconds());
         loopTimes.offer(runtime.milliseconds());
         if(loopTimes.size() > loop_Window_Size){
@@ -228,7 +224,7 @@ public class Hello_Bees_Demo extends OpMode {
 
         leftdriveMotorPower = 0;
         rightdriveMotorPower = 0;
-        moveForwardETime = new ElapsedTime();
+        actionElapsedTime.reset();
         movingForward = true;
     }
 
@@ -236,27 +232,40 @@ public class Hello_Bees_Demo extends OpMode {
     @Override
     public void loop() {
         // Switch between driving for a second and looking for an april tag
-        if (moveForwardETime.seconds() > movingPauseTime && !armAutomation) {
-            movingForward = !movingForward;
-            moveForwardETime.reset();
-            if (movingForward) {
-                movingPauseTime = moveForwardTime;
-                leftdriveMotorPower = 0.3; rightdriveMotorPower = 0.3;
+        if (actionElapsedTime.seconds() > movingPauseTime && !armAutomation) {
+            if (armStowed) {
+                movingForward = !movingForward;
+                actionElapsedTime.reset();
+                if (movingForward) {
+                    movingPauseTime = moveForwardTime;
+                    leftdriveMotorPower = 0.2;
+                    rightdriveMotorPower = 0.2;
+                } else {
+                    movingPauseTime = scanForTagsTime;
+                    leftdriveMotorPower = 0;
+                    rightdriveMotorPower = 0;
+                }
             } else {
-                movingPauseTime = scanForTagsTime;
-                leftdriveMotorPower = 0; rightdriveMotorPower = 0;
+                automationState = 1;
+                armAutomation = true;
             }
         }
 
         // While Robot is stopped check for april tags and if found start move to them
-        if (!movingForward && currentDetections.size() == 1 && !armAutomation) {
+        if (!movingForward && currentDetections.size() >= 1 && !armAutomation && (seesLeftTag || seesRightTag)) {
+
+            int tagXtoTurretDeg = -64; // A cheat but easy way to move the turret to the correct degree by the position of the april tag
+
+            if (seesLeftTag) {
+                turret_movement_target = (int)(aprilTag_Target_Left.x * tagXtoTurretDeg);
+            } else if (seesRightTag) {
+                turret_movement_target = (int)(aprilTag_Target_Left.x * tagXtoTurretDeg);
+            }
             automationState = 1;
             armAutomation = true;
             linkage_target = -100;
             shoulder_movement_target = 2;
             wrist_target = .7;
-            turret_movement_target = 1500;
-            automaticSpray();
         }
 
         sensorRead();
@@ -307,7 +316,7 @@ public class Hello_Bees_Demo extends OpMode {
         telemetry.addLine(String.format("Arm Loc Wrist: (%.2f) Shoulder: Raw (%.2f), Angle (%.1f)", wristServoPosition, armPos, shoulder_angle));
         telemetry.addLine(String.format("Status: Run Time: %s Average Loop: %.0f", runtime.toString(), averageLoopTime));
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
-
+        telemetry.addData("Action Elapsed Time", actionElapsedTime.seconds());
         //telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
         //telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
     }
@@ -336,8 +345,10 @@ public class Hello_Bees_Demo extends OpMode {
         for (AprilTagDetection detection : currentDetections) {
             if (detection.metadata != null) {
                 detectedTageID = detection.id;
-                if(detection.id == 584) aprilTag_Target_Left = detection.robotPose.getPosition();
-                if(detection.id == 583) aprilTag_Target_Right = detection.robotPose.getPosition();
+                seesLeftTag = detection.id == 584;
+                seesRightTag = detection.id == 583;
+                if(seesLeftTag) aprilTag_Target_Left = detection.robotPose.getPosition();
+                if(seesRightTag) aprilTag_Target_Right = detection.robotPose.getPosition();
                 //detectedPosition = new Position(DistanceUnit.INCH, detection.robotPose.getPosition().x, detection.robotPose.getPosition().y,detection.robotPose.getPosition().z, 0);
                 //detectedYPRA = new YawPitchRollAngles(AngleUnit.DEGREES, detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES), detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES), 0);
             }
@@ -544,7 +555,7 @@ public class Hello_Bees_Demo extends OpMode {
                 //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 //.setTagLibrary(AprilTagGameDatabase.getCenterStageTagLibrary())
                 //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-                .setCameraPose(cameraPosition, cameraOrientation)
+                .setCameraPose(cameraPosition, Constants.cameraOrientation)
 
                 // == CAMERA CALIBRATION ==
                 // If you do not manually specify calibration parameters, the SDK will attempt
@@ -586,9 +597,9 @@ public class Hello_Bees_Demo extends OpMode {
         coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
         coordsReoriented.z = p.z;
 
-        coordsReoriented.x = coordsReoriented.x - X_CAM;
-        coordsReoriented.y = coordsReoriented.y - Y_CAM;
-        coordsReoriented.z = coordsReoriented.z - Z_CAM;
+        coordsReoriented.x = coordsReoriented.x - Constants.X_CAM;
+        coordsReoriented.y = coordsReoriented.y - Constants.Y_CAM;
+        coordsReoriented.z = coordsReoriented.z - Constants.Z_CAM;
         return coordsReoriented;
     }
     private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
