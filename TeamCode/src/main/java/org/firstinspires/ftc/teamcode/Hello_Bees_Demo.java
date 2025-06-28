@@ -15,7 +15,6 @@ import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -149,8 +148,10 @@ public class Hello_Bees_Demo extends OpMode {
     ElapsedTime actionElapsedTime = new ElapsedTime(); // A timer to check if the robot has waited the set amount of time
     double moveForwardTime = 1; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
     double scanForTagsTime = 3; // How long (in seconds) the robot stops for to look for an april tag
-    double movingPauseTime = 0; // Variable for how long the robot is currently waiting for to switch to the next task
+    double actionPauseTime = 0; // Variable for how long the robot is currently waiting for to switch to the next task
     boolean armOut = false;
+
+    ElapsedTime stateTimer = new ElapsedTime();
 
     boolean seesLeftTag = false;
     boolean seesRightTag = false;
@@ -233,16 +234,16 @@ public class Hello_Bees_Demo extends OpMode {
     @Override
     public void loop() {
         // Switch between driving for a second and looking for an april tag
-        if (actionElapsedTime.seconds() > movingPauseTime && !armAutomation) {
+        if (actionElapsedTime.seconds() > actionPauseTime && !armAutomation) {
             if (armStowed) {
                 movingForward = !movingForward;
                 actionElapsedTime.reset();
                 if (movingForward) {
-                    movingPauseTime = moveForwardTime;
+                    actionPauseTime = moveForwardTime;
                     leftdriveMotorPower = 0.2;
                     rightdriveMotorPower = 0.2;
                 } else {
-                    movingPauseTime = scanForTagsTime;
+                    actionPauseTime = scanForTagsTime;
                     leftdriveMotorPower = 0;
                     rightdriveMotorPower = 0;
                 }
@@ -267,6 +268,8 @@ public class Hello_Bees_Demo extends OpMode {
             linkage_target = -100;
             shoulder_movement_target = 2;
             wrist_target = .7;
+            actionPauseTime = 3;
+            actionElapsedTime.reset();
         }
 
         sensorRead();
@@ -509,9 +512,37 @@ public class Hello_Bees_Demo extends OpMode {
         }
         else if (automationState ==5) {
             if (!linkage.isBusy() && (abs(turret_target - turretMotorPosition)) < 100 && armPos > shoulder_movement_target - .05 && armPos < shoulder_movement_target + .05) {
-                automationState = 0;
-                armAutomation = false;
+                automationState = 6;
+                pumpMotorPower = -1;
+                stateTimer.reset();
             }
+        }
+        else if (automationState ==6) {
+            if (stateTimer.seconds() > 10) {
+                stateTimer.reset();
+                pumpMotorPower = 0;
+                foggerRelay = true;
+                automationState = 7;
+            }
+        }
+        else if (automationState ==7) {
+            if (stateTimer.seconds() > 3) {
+                stateTimer.reset();
+                foggerRelay = false;
+                fanRelay = true;
+                automationState = 8;
+            }
+        }
+        else if (automationState ==8) {
+            if (stateTimer.seconds() > 2) {
+                stateTimer.reset();
+                fanRelay = false;
+                automationState = 9;
+            }
+        }
+        else if (automationState ==9) {
+            armAutomation = false;
+            automationState = 0;
         }
         else if(automationState == 99){ //set to this state to home the turret
             automationState = 98;
