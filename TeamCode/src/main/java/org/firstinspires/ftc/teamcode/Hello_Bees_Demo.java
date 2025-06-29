@@ -94,8 +94,6 @@ public class Hello_Bees_Demo extends OpMode {
     public double shoulder_stowed = .5;
     private PIDController turret_controller;
     private PIDController shoulder_controller;
-    public static double shoulder_p = 2, shoulder_i = 0, shoulder_d = .1;
-    public static double p =0.001, i=0, d = 0.00003;
 
     private final double turret_ticks_in_degree = 64.47;
     private final double TURRET_ENCODER_TO_RADIANS = toRadians(turret_ticks_in_degree);
@@ -146,10 +144,12 @@ public class Hello_Bees_Demo extends OpMode {
     // Variables for Automated Demo
     boolean movingForward;
     ElapsedTime actionElapsedTime = new ElapsedTime(); // A timer to check if the robot has waited the set amount of time
-    double moveForwardTime = 1; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
+    double moveForwardTime = 1.5; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
     double scanForTagsTime = 3; // How long (in seconds) the robot stops for to look for an april tag
     double actionPauseTime = 0; // Variable for how long the robot is currently waiting for to switch to the next task
     boolean armOut = false;
+
+    int fogCycleCount = 0;
 
     ElapsedTime stateTimer = new ElapsedTime();
 
@@ -192,8 +192,8 @@ public class Hello_Bees_Demo extends OpMode {
         ButtonBblock = false;
         AutoBlock = false;
         ButtonAblock = false;
-        turret_controller = new PIDController(p, i ,d);
-        shoulder_controller = new PIDController(shoulder_p, shoulder_i, shoulder_d);
+        turret_controller = new PIDController(Constants.turret_p, Constants.turret_i,Constants.turret_d);
+        shoulder_controller = new PIDController(Constants.shoulder_p, Constants.shoulder_i, Constants.shoulder_d);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.addLine("Initialized");
         loopTimes.offer(runtime.milliseconds());
@@ -228,6 +228,9 @@ public class Hello_Bees_Demo extends OpMode {
         rightdriveMotorPower = 0;
         actionElapsedTime.reset();
         movingForward = true;
+
+        automationState = 99;
+        armAutomation = true;
     }
 
 
@@ -235,21 +238,16 @@ public class Hello_Bees_Demo extends OpMode {
     public void loop() {
         // Switch between driving for a second and looking for an april tag
         if (actionElapsedTime.seconds() > actionPauseTime && !armAutomation) {
-            if (armStowed) {
-                movingForward = !movingForward;
-                actionElapsedTime.reset();
-                if (movingForward) {
-                    actionPauseTime = moveForwardTime;
-                    leftdriveMotorPower = 0.2;
-                    rightdriveMotorPower = 0.2;
-                } else {
-                    actionPauseTime = scanForTagsTime;
-                    leftdriveMotorPower = 0;
-                    rightdriveMotorPower = 0;
-                }
+            movingForward = !movingForward;
+            actionElapsedTime.reset();
+            if (movingForward) {
+                actionPauseTime = moveForwardTime;
+                leftdriveMotorPower = 0.2;
+                rightdriveMotorPower = 0.2;
             } else {
-                automationState = 99;
-                armAutomation = true;
+                actionPauseTime = scanForTagsTime;
+                leftdriveMotorPower = 0;
+                rightdriveMotorPower = 0;
             }
         }
 
@@ -265,9 +263,9 @@ public class Hello_Bees_Demo extends OpMode {
             }
             automationState = 1;
             armAutomation = true;
-            linkage_target = -100;
-            shoulder_movement_target = 2;
-            wrist_target = .7;
+            linkage_target = -145;
+            shoulder_movement_target = 1.75;
+            wrist_target = .65;
             actionPauseTime = 3;
             actionElapsedTime.reset();
         }
@@ -321,6 +319,7 @@ public class Hello_Bees_Demo extends OpMode {
         telemetry.addLine(String.format("Status: Run Time: %s Average Loop: %.0f", runtime.toString(), averageLoopTime));
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
         telemetry.addData("Action Elapsed Time", actionElapsedTime.seconds());
+        telemetry.addData("State Timer", stateTimer.seconds());
         //telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
         //telemetry.addLine("PRY = Pitch, Roll & Yaw (XYZ Rotation)");
     }
@@ -385,7 +384,7 @@ public class Hello_Bees_Demo extends OpMode {
 
         //turret movement
         if(armAutomation) {
-            turret_controller.setPID(p, i, d);
+            turret_controller.setPID(Constants.turret_p, Constants.turret_i, Constants.turret_d);
             turretMotorPower = turret_controller.calculate(turretMotorPosition, turret_target);
         }
         if (!turret_home.getState()) {
@@ -403,7 +402,7 @@ public class Hello_Bees_Demo extends OpMode {
 
         //shoulder movement
         if(armAutomation){
-            shoulder_controller.setPID(shoulder_p, shoulder_i, shoulder_d);
+            shoulder_controller.setPID(Constants.shoulder_p, Constants.shoulder_i, Constants.shoulder_d);
             shoulderMotorPower = -shoulder_controller.calculate(armPos,shoulder_target);
         }
         shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.2),.2); //movement safety
@@ -519,41 +518,50 @@ public class Hello_Bees_Demo extends OpMode {
         }
         else if (automationState ==6) {
             if (stateTimer.seconds() > 10) {
-                stateTimer.reset();
-                pumpMotorPower = 0;
-                foggerRelay = true;
                 automationState = 7;
+                fogCycleCount = 0;
             }
         }
         else if (automationState ==7) {
-            if (stateTimer.seconds() > 3) {
-                stateTimer.reset();
-                foggerRelay = false;
-                fanRelay = true;
-                automationState = 8;
-            }
+            stateTimer.reset();
+            pumpMotorPower = 0;
+            foggerRelay = false;
+            automationState = 8;
         }
         else if (automationState ==8) {
-            if (stateTimer.seconds() > 2) {
+            if (stateTimer.seconds() > 3) {
                 stateTimer.reset();
+                foggerRelay = true;
                 fanRelay = false;
                 automationState = 9;
             }
         }
         else if (automationState ==9) {
-            armAutomation = false;
-            automationState = 0;
+            if (stateTimer.seconds() > 3) {
+                fogCycleCount++;
+                stateTimer.reset();
+                fanRelay = true;
+                if (fogCycleCount >= 6) {
+                    automationState = 10;
+                } else {
+                    automationState = 7;
+                }
+            }
+        }
+        else if (automationState ==10) {
+            automationState = 99;
+            armStowed = false;
         }
         else if(automationState == 99){ //set to this state to home the turret
             automationState = 98;
             shoulder_target = armPos;
             turret_target = (int) turretMotorPosition;
-            linkageMotorPower = 0.5;
+            linkage.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            linkageMotorPower = 1;
 
         }
         else if(automationState == 98){
             if(!rearLinkageLimit){
-                linkageMotorPower = 0;
                 turret_target = 6000;
                 wristServoPosition = .5;
                 shoulder_target = shoulder_stowed;
@@ -563,6 +571,7 @@ public class Hello_Bees_Demo extends OpMode {
         else if(automationState == 97){
             if(!rearLinkageLimit && !((abs(turret_stowed - turretMotorPosition)) > 100) && !(armPos < shoulder_stowed - .05) && !(armPos > shoulder_stowed + .05)){
                 //!rearLinkageLimit && (abs(turret_target - turretMotorPosition))<50  && armPos> shoulder_stowed - .05 && armPos < shoulder_stowed +.05 old exit state 97 case
+
                 armStowed = true;
                 automationState = 0;
                 armAutomation = false;

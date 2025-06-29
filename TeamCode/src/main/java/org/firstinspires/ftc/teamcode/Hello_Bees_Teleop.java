@@ -31,12 +31,10 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Math.*;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -48,14 +46,12 @@ import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraDirection;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import org.firstinspires.ftc.robotcore.external.matrices.*;
 
 
 import java.util.List;
@@ -125,7 +121,7 @@ public class Hello_Bees_Teleop extends OpMode
     private PIDController turret_controller;
     private PIDController shoulder_controller;
     public static double shoulder_p = 2, shoulder_i = 0, shoulder_d = .1;
-    public static double p =0.001, i=0, d = 0.00003;
+    public static double turret_p =0.001, turret_i =0, turret_d = 0.00003;
     
     private final double turret_ticks_in_degree = 64.47;
     private final double TURRET_ENCODER_TO_RADIANS = toRadians(turret_ticks_in_degree);
@@ -209,7 +205,7 @@ public class Hello_Bees_Teleop extends OpMode
         ButtonBblock = false;
         AutoBlock = false;
         ButtonAblock = false;
-        turret_controller = new PIDController(p, i ,d);
+        turret_controller = new PIDController(turret_p, turret_i, turret_d);
         shoulder_controller = new PIDController(shoulder_p, shoulder_i, shoulder_d);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.addData("Status", "Initialized");
@@ -359,7 +355,7 @@ public class Hello_Bees_Teleop extends OpMode
 
         //turret movement
         if(armAutomation) {
-            turret_controller.setPID(p, i, d);
+            turret_controller.setPID(turret_p, turret_i, turret_d);
             turretMotorPower = turret_controller.calculate(turretMotorPosition, turret_target);
         }
         if (!turret_home.getState()) {
