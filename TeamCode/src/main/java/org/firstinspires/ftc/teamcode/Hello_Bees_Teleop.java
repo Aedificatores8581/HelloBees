@@ -131,7 +131,6 @@ public class Hello_Bees_Teleop extends OpMode
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0); // old values, currently innacurate
     Position cameraRelCoords;
-    final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
     double EXTENSION_MOTOR_OFFSET = 4.5;
     double EXTENSION_ENCODER_TO_RADIANS = toRadians(537.7/360);
@@ -626,8 +625,8 @@ public class Hello_Bees_Teleop extends OpMode
     private Position getRobotRelativeCoordinate(Position p){
         Position coordsReoriented = new Position(DistanceUnit.INCH, 0, 0, 0, System.nanoTime());
     //since the camera is currently (6/24) only rotated in yaw, I've done this for now, but we should have a matrix implementation next
-        coordsReoriented.x = p.x * Math.cos(-YAW_CAM)- p.y * Math.sin(-YAW_CAM);
-        coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
+        coordsReoriented.x = p.x * Math.cos(-Constants.YAW_CAM)- p.y * Math.sin(-Constants.YAW_CAM);
+        coordsReoriented.y = p.x * Math.sin(-Constants.YAW_CAM)+ p.y * Math.cos(-Constants.YAW_CAM);
 	coordsReoriented.z = p.z;
 
         coordsReoriented.x = coordsReoriented.x + Constants.X_CAM;
@@ -704,5 +703,11 @@ private void automationTelemetryTest(){
         telemetry.addData("turret angle (deg): ", toDegrees(target_values[0]));
         telemetry.addData("extension length (in): ", target_values[1]);
         telemetry.addData("arm angle (deg): ", toDegrees(target_values[2]));
+
+        //Test out calculating turret target angle using the math
+        double turret_target_angle = -toDegrees(target_values[0]);
+        if (turret_target_angle < 0) turret_target_angle += 180;
+        else turret_target_angle -= 180;
+        turret_target = (int)(turret_target_angle * (6000d/90d));
 }
 }

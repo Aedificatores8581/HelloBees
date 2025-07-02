@@ -103,7 +103,6 @@ public class Hello_Bees_Demo extends OpMode {
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
     private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0); // old values, currently innacurate
     Position cameraRelCoords;
-    final double YAW_CAM = 0.785398, PITCH_CAM = 0, ROLL_CAM = 0;
     //extension measurements
     double EXTENSION_MOTOR_OFFSET = 4.5;
     double EXTENSION_ENCODER_TO_RADIANS = toRadians(537.7/360);
@@ -144,12 +143,14 @@ public class Hello_Bees_Demo extends OpMode {
     // Variables for Automated Demo
     boolean movingForward;
     ElapsedTime actionElapsedTime = new ElapsedTime(); // A timer to check if the robot has waited the set amount of time
-    double moveForwardTime = 1.5; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
-    double scanForTagsTime = 3; // How long (in seconds) the robot stops for to look for an april tag
+    public static double moveForwardTime = 1.5; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
+    public static double scanForTagsTime = 3; // How long (in seconds) the robot stops for to look for an april tag
+    public static double pumpTime = 5, fogTime = 3.5, fanTime = 2.5;
     double actionPauseTime = 0; // Variable for how long the robot is currently waiting for to switch to the next task
     boolean armOut = false;
 
     int fogCycleCount = 0;
+    public static int targetFogCycles = 6;
 
     ElapsedTime stateTimer = new ElapsedTime();
 
@@ -254,13 +255,24 @@ public class Hello_Bees_Demo extends OpMode {
         // While Robot is stopped check for april tags and if found start move to them
         if (!movingForward && currentDetections.size() >= 1 && !armAutomation && (seesLeftTag || seesRightTag)) {
 
-            int tagXtoTurretDeg = -64; // A cheat but easy way to move the turret to the correct degree by the position of the april tag
-
+//            int tagXtoTurretDeg = -64; // A cheat but easy way to move the turret to the correct degree by the position of the april tag
+//
             if (seesLeftTag) {
-                turret_movement_target = (int)(aprilTag_Target_Left.x * tagXtoTurretDeg);
+//                turret_movement_target = (int)(aprilTag_Target_Left.x * tagXtoTurretDeg);
+                cameraRelCoords = aprilTag_Target_Left;
             } else if (seesRightTag) {
-                turret_movement_target = (int)(aprilTag_Target_Left.x * tagXtoTurretDeg);
+//                turret_movement_target = (int)(aprilTag_Target_Left.x * tagXtoTurretDeg);
+                cameraRelCoords = aprilTag_Target_Right;
             }
+
+            robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
+            double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
+            double turret_target_angle = -toDegrees(target_values[0]);
+            if (turret_target_angle < 0) turret_target_angle += 180;
+            else turret_target_angle -= 180;
+            turret_target = (int)(turret_target_angle * (6000d/90d));
+
+
             automationState = 1;
             armAutomation = true;
             linkage_target = -145;
@@ -318,6 +330,7 @@ public class Hello_Bees_Demo extends OpMode {
         telemetry.addLine(String.format("Arm Loc Wrist: (%.2f) Shoulder: Raw (%.2f), Angle (%.1f)", wristServoPosition, armPos, shoulder_angle));
         telemetry.addLine(String.format("Status: Run Time: %s Average Loop: %.0f", runtime.toString(), averageLoopTime));
         telemetry.addData("Motors", "left (%.2f), right (%.2f)", leftdriveMotorPower, rightdriveMotorPower);
+        telemetry.addLine("Linkage: Power Var: "+linkageMotorPower+" Power Get: "+linkage.getPower());
         telemetry.addData("Action Elapsed Time", actionElapsedTime.seconds());
         telemetry.addData("State Timer", stateTimer.seconds());
         //telemetry.addLine("\nkey:\nXYZ = X (Right), Y (Forward), Z (Up) dist.");
@@ -517,7 +530,7 @@ public class Hello_Bees_Demo extends OpMode {
             }
         }
         else if (automationState ==6) {
-            if (stateTimer.seconds() > 10) {
+            if (stateTimer.seconds() > pumpTime) {
                 automationState = 7;
                 fogCycleCount = 0;
             }
@@ -529,7 +542,7 @@ public class Hello_Bees_Demo extends OpMode {
             automationState = 8;
         }
         else if (automationState ==8) {
-            if (stateTimer.seconds() > 3) {
+            if (stateTimer.seconds() > fogTime) {
                 stateTimer.reset();
                 foggerRelay = true;
                 fanRelay = false;
@@ -537,11 +550,11 @@ public class Hello_Bees_Demo extends OpMode {
             }
         }
         else if (automationState ==9) {
-            if (stateTimer.seconds() > 3) {
+            if (stateTimer.seconds() > fanTime) {
                 fogCycleCount++;
                 stateTimer.reset();
                 fanRelay = true;
-                if (fogCycleCount >= 6) {
+                if (fogCycleCount >= targetFogCycles) {
                     automationState = 10;
                 } else {
                     automationState = 7;
@@ -566,6 +579,8 @@ public class Hello_Bees_Demo extends OpMode {
                 wristServoPosition = .5;
                 shoulder_target = shoulder_stowed;
                 automationState = 97;
+            } else {
+                linkageMotorPower = 1;
             }
         }
         else if(automationState == 97){
@@ -575,6 +590,8 @@ public class Hello_Bees_Demo extends OpMode {
                 armStowed = true;
                 automationState = 0;
                 armAutomation = false;
+            } else {
+                linkageMotorPower = 1;
             }
         }
         else if (automationState ==50){
@@ -633,15 +650,15 @@ public class Hello_Bees_Demo extends OpMode {
     }   // end method initAprilTag()
 
     private Position getRobotRelativeCoordinate(Position p){
-        Position coordsReoriented = new Position();
+        Position coordsReoriented = new Position(DistanceUnit.INCH, 0, 0, 0, System.nanoTime());
         //since the camera is currently (6/24) only rotated in yaw, I've done this for now, but we should have a matrix implementation next
-        coordsReoriented.x = p.x * Math.cos(-YAW_CAM)- p.y * Math.sin(-YAW_CAM);
-        coordsReoriented.y = p.x * Math.sin(-YAW_CAM)+ p.y * Math.cos(-YAW_CAM);
+        coordsReoriented.x = p.x * Math.cos(-Constants.YAW_CAM)- p.y * Math.sin(-Constants.YAW_CAM);
+        coordsReoriented.y = p.x * Math.sin(-Constants.YAW_CAM)+ p.y * Math.cos(-Constants.YAW_CAM);
         coordsReoriented.z = p.z;
 
-        coordsReoriented.x = coordsReoriented.x - Constants.X_CAM;
-        coordsReoriented.y = coordsReoriented.y - Constants.Y_CAM;
-        coordsReoriented.z = coordsReoriented.z - Constants.Z_CAM;
+        coordsReoriented.x = coordsReoriented.x + Constants.X_CAM;
+        coordsReoriented.y = coordsReoriented.y + Constants.Y_CAM;
+        coordsReoriented.z = coordsReoriented.z + Constants.Z_CAM;
         return coordsReoriented;
     }
     private double[] getGeometricTargets(double x_robotrel, double y_robotrel, double z_robotrel) { // returns array containing turret angle (radians), extension distance (inches), arm angle (radians)
@@ -651,7 +668,7 @@ public class Hello_Bees_Demo extends OpMode {
 
         //what if the extension target is outside of its maximum length, and the arm can’t reach it?
         //then the arm should point to the QR code and extend to the maximum length
-        if (Math.sqrt(Math.pow(x_robotrel,2 )+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - PIVOT_HEIGHT), 2)))) {
+        if (Math.sqrt(Math.pow(x_robotrel, 2)+ Math.pow(y_robotrel, 2)) > MAX_EXTENSION_LENGTH + QR_distance_away && ARM_LENGTH < Math.sqrt((x_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.cos(turret_angle), 2)) + (y_robotrel - (MAX_EXTENSION_LENGTH + QR_distance_away) * Math.pow(Math.sin(turret_angle),2 )+ Math.pow((z_robotrel - PIVOT_HEIGHT), 2)))) {
 
             how_far_extend = EXTENSION_RANGE;
             double x_pivot = x_robotrel - MAX_EXTENSION_LENGTH * Math.cos(turret_angle);
@@ -665,7 +682,7 @@ public class Hello_Bees_Demo extends OpMode {
             how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
         }
         //this one will likely never be used, and if the robot enters this state, something has gone wrong
-        else if ((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH < 1) {
+        else if ((z_robotrel - PIVOT_HEIGHT) / ARM_LENGTH < -1) {
             arm_angle_goal = -Math.PI / 2;
             how_far_extend = Math.sqrt(Math.pow(x_robotrel,2) + Math.pow(y_robotrel, 2)) - MIN_EXTENSION_LENGTH;
         }
