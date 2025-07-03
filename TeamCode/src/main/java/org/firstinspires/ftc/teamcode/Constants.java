@@ -7,7 +7,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
 @Config
 public class Constants {
-
+    // Drive Constants
+    public static double DRIVE_FORWARD_POWER = 1;
 
     public static double X_CAM = -44/*Actual Number with Less Accurate Results: 11???*/, Y_CAM = 0, Z_CAM= -1.5;
     public static double YAW_CAM = Math.PI/2, PITCH_CAM = 0, ROLL_CAM = 0;
