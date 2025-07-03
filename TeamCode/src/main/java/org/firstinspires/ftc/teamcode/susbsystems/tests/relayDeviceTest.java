@@ -22,6 +22,8 @@ public class relayDeviceTest extends LinearOpMode {
         telemetry.update();
         waitForStart();
         while (opModeIsActive()) {
+            // Note: It has been a while since I've used Button Blocks so these may not work as expected
+
             // Fan Toggle on A Press
             if (gamepad1.a && !fanButtonBlock) {
                 fanButtonBlock = true;

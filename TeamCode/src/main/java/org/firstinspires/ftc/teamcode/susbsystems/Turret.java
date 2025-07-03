@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-public class Turret {
+public class Turret { // STILL WIP
     private final double TICKS_TO_DEG = 6000/90;
     private final double ERROR_RANGE = 100;
 

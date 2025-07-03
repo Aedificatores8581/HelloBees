@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-public class RelayDevice {
+public class RelayDevice { // Working but Could be Missing Some Needed Functions
     private DigitalChannel device;
     private ElapsedTime actionRunTime = new ElapsedTime();
     private double runTimeGoal;
