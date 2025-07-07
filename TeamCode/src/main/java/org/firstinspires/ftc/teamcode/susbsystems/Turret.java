@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.util.Util;
 
-public class Turret { // STILL WIP
+public class Turret {
     private final double TICKS_TO_DEG = 5900d/90d;
 
     private DcMotorEx motor;
@@ -67,7 +67,7 @@ public class Turret { // STILL WIP
         if (atHome) homed = true;
         if (isHoming && homed) {Stop(); ResetEncoder(); }
 
-        if (isBusy) { // TODO: Fix Excessive Nesting
+        if (isBusy) {
             if (isHoming && !homed) {
                     rawSet(homePower);
                     if (homeTime.seconds() > 3) StartHome();

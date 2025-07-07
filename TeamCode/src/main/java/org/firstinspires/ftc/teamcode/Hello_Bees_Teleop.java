@@ -167,6 +167,7 @@ public class Hello_Bees_Teleop extends OpMode
     Position aprilTag_Target_Left = new Position(DistanceUnit.INCH,0, 0, 0, 0); //Tag 584 "Jonah"
     Position aprilTag_Target_Right = new Position(DistanceUnit.INCH,0, 0, 0, 0); //Tag 583 "Nemo"
 
+    boolean seesLeftTag = false, seesRightTag = false;
     /*
      * Code to run ONCE when the driver hits INIT
      */
@@ -320,8 +321,11 @@ public class Hello_Bees_Teleop extends OpMode
         for (AprilTagDetection detection : currentDetections) {
             if (detection.metadata != null) {
                 detectedTageID = detection.id;
-                if(detection.id == 584) aprilTag_Target_Left = detection.robotPose.getPosition();
-                if(detection.id == 583) aprilTag_Target_Right = detection.robotPose.getPosition();
+
+                seesLeftTag = detection.id == 584;
+                seesRightTag = detection.id == 583;
+                if(seesLeftTag && !gamepad1.dpad_left) aprilTag_Target_Left = detection.robotPose.getPosition();
+                if(seesRightTag && !gamepad1.dpad_left) aprilTag_Target_Right = detection.robotPose.getPosition();
                 //detectedPosition = new Position(DistanceUnit.INCH, detection.robotPose.getPosition().x, detection.robotPose.getPosition().y,detection.robotPose.getPosition().z, 0);
                 //detectedYPRA = new YawPitchRollAngles(AngleUnit.DEGREES, detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES), detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES), 0);
             }
@@ -418,7 +422,7 @@ public class Hello_Bees_Teleop extends OpMode
 
         if(gamepad1.dpad_left){//load test values for vision
             //Axes orientation: +x right, +y forward, +z upward
-            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-21, 13.5, -6,0);
+            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-2.5, -1.5, -25.5,0);
             aprilTag_Target_Right = new Position(DistanceUnit.INCH,-20, 10, -4,0);
         }
         /*

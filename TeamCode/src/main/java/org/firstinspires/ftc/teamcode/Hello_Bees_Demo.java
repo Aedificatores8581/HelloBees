@@ -154,8 +154,7 @@ public class Hello_Bees_Demo extends OpMode {
 
     ElapsedTime stateTimer = new ElapsedTime();
 
-    boolean seesLeftTag = false;
-    boolean seesRightTag = false;
+    boolean seesLeftTag = false, seesRightTag = false;
     /*
      * Code to run ONCE when the driver hits INIT
      */
