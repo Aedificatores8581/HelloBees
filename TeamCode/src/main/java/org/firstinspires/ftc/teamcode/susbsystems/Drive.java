@@ -1,11 +1,10 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
-import com.arcrobotics.ftclib.hardware.motors.Motor;
 import com.qualcomm.robotcore.hardware.CRServo;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.util.Util;
 
 public class Drive { // Working but Could be Missing Some Needed Functions
     /**
@@ -26,12 +25,10 @@ public class Drive { // Working but Could be Missing Some Needed Functions
     public Drive(HardwareMap hm) {
         leftMotor = hm.get(CRServo.class, "leftdrive");
         rightMotor = hm.get(CRServo.class, "rightdrive");
-        rightMotor.setDirection(CRServo.Direction.REVERSE);
+        leftMotor.setDirection(CRServo.Direction.REVERSE);
     }
     private double MotorPower(double power) {
-        if (power == 0) return 0;
-        power = Util.IntClamp(power);
-        return (power*(maxPower-minPower))+minPower; // Convert Input of 1 to MaxPower and input of 0.001 to MinPower
+        return Util.rangeZero(Util.IntClamp(power),minPower,maxPower);
     }
     public void Set(double power) {
         double motorPower = MotorPower(power);

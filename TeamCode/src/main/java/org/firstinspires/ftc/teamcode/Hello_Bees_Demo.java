@@ -193,8 +193,8 @@ public class Hello_Bees_Demo extends OpMode {
         ButtonBblock = false;
         AutoBlock = false;
         ButtonAblock = false;
-        turret_controller = new PIDController(Constants.turret_p, Constants.turret_i,Constants.turret_d);
-        shoulder_controller = new PIDController(Constants.shoulder_p, Constants.shoulder_i, Constants.shoulder_d);
+        turret_controller = new PIDController(Constants.TURRET_P, Constants.TURRET_I,Constants.TURRET_D);
+        shoulder_controller = new PIDController(Constants.ARM_P, Constants.ARM_I, Constants.ARM_D);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.addLine("Initialized");
         loopTimes.offer(runtime.milliseconds());
@@ -363,8 +363,8 @@ public class Hello_Bees_Demo extends OpMode {
                 detectedTageID = detection.id;
                 seesLeftTag = detection.id == 584;
                 seesRightTag = detection.id == 583;
-                if(seesLeftTag) aprilTag_Target_Left = detection.robotPose.getPosition();
-                if(seesRightTag) aprilTag_Target_Right = detection.robotPose.getPosition();
+                if(seesLeftTag && !gamepad1.dpad_left) aprilTag_Target_Left = detection.robotPose.getPosition();
+                if(seesRightTag && !gamepad1.dpad_left) aprilTag_Target_Right = detection.robotPose.getPosition();
                 //detectedPosition = new Position(DistanceUnit.INCH, detection.robotPose.getPosition().x, detection.robotPose.getPosition().y,detection.robotPose.getPosition().z, 0);
                 //detectedYPRA = new YawPitchRollAngles(AngleUnit.DEGREES, detection.robotPose.getOrientation().getPitch(AngleUnit.DEGREES),detection.robotPose.getOrientation().getRoll(AngleUnit.DEGREES), detection.robotPose.getOrientation().getYaw(AngleUnit.DEGREES), 0);
             }
@@ -397,7 +397,7 @@ public class Hello_Bees_Demo extends OpMode {
 
         //turret movement
         if(armAutomation) {
-            turret_controller.setPID(Constants.turret_p, Constants.turret_i, Constants.turret_d);
+            turret_controller.setPID(Constants.TURRET_P, Constants.TURRET_I, Constants.TURRET_D);
             turretMotorPower = turret_controller.calculate(turretMotorPosition, turret_target);
         }
         if (!turret_home.getState()) {
@@ -415,7 +415,7 @@ public class Hello_Bees_Demo extends OpMode {
 
         //shoulder movement
         if(armAutomation){
-            shoulder_controller.setPID(Constants.shoulder_p, Constants.shoulder_i, Constants.shoulder_d);
+            shoulder_controller.setPID(Constants.ARM_P, Constants.ARM_I, Constants.ARM_D);
             shoulderMotorPower = -shoulder_controller.calculate(armPos,shoulder_target);
         }
         shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.2),.2); //movement safety
@@ -460,7 +460,8 @@ public class Hello_Bees_Demo extends OpMode {
         arm_to_AprilTag = gamepad1.b;//test arm movement based on apriltags
 
         if(gamepad1.dpad_left){//load test values for vision
-            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-15, 4, -2,0);
+            //aprilTag_Target_Left = new Position(DistanceUnit.INCH,-15, 4, -2,0);
+            aprilTag_Target_Left = new Position(DistanceUnit.INCH,-2.5, -1.5, -25.5,0);
             aprilTag_Target_Right = new Position(DistanceUnit.INCH,-20, 10, -4,0);
         }
 

@@ -10,12 +10,13 @@ public class RelayDevice { // Working but Could be Missing Some Needed Functions
     private double runTimeGoal;
     private boolean isBusy = false;
     private boolean currentState = false;
+    private boolean locked;
     public RelayDevice(HardwareMap hm, String deviceName) {
         device = hm.get(DigitalChannel.class, deviceName);
-        device.setMode(DigitalChannel.Mode.INPUT);
+        InputOn();
     }
     private void SetState(boolean state) {
-        device.setState(state); // This exists in case false is actually what turns the device on so it can be flipped in one spot
+        device.setState(!state); // This exists in case false is actually what turns the device on so it can be flipped in one spot
     }
     public void TurnOn() {
         currentState = true;
@@ -44,4 +45,14 @@ public class RelayDevice { // Working but Could be Missing Some Needed Functions
     public boolean GetState() {
         return currentState;
     }
+    public void FullShutOff() {TurnOff();InputOff();}
+    public void InputOff() { device.setMode(DigitalChannel.Mode.INPUT); locked = true; }
+    public void InputOn() { device.setMode(DigitalChannel.Mode.OUTPUT); locked = false; SetState(currentState); }
+    public void ToggleInput() {
+        if (locked)
+            InputOn();
+        else
+            InputOff();
+    }
+    public boolean InputState() {return locked;}
 }

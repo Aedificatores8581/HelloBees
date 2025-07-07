@@ -1,48 +1,76 @@
 package org.firstinspires.ftc.teamcode.susbsystems.tests;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.RelayDevice;
+import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 
 @TeleOp (name = "RelayDevice Test (Fan and Fogger)", group = "SubsysTest")
-public class relayDeviceTest extends LinearOpMode {
+public class relayDeviceTest extends OpMode {
     RelayDevice fan, fogger;
-    boolean fanButtonBlock = false, foggerButtonBlock = false;
-    //TODO: Implement Running for Time using Second Button Blocks and Use DPad Up/Down to Change the Time it Runs for
-    boolean fanButtonBlock2 = false, foggerButtonBlock2 = false;
-    boolean dpadUpBlock = false, dpadDownBlock = false;
+    ButtonBlock fanToggle, foggerToggle, fanRunFor, foggerRunFor, dpadUp, dpadDown, devicesLock;
+
+    double timeRunFor = 1d;
 
     @Override
-    public void runOpMode() {
-        fan = new RelayDevice(hardwareMap, "");
-        fogger = new RelayDevice(hardwareMap, "");
+    public void init() {
+        fan = new RelayDevice(hardwareMap, "valve1");
+        fogger = new RelayDevice(hardwareMap, "compressor1");
 
         telemetry.addLine("Initialized");
         telemetry.update();
-        waitForStart();
-        while (opModeIsActive()) {
-            // Note: It has been a while since I've used Button Blocks so these may not work as expected
+        fan.TurnOff();
+        fogger.TurnOff();
 
-            // Fan Toggle on A Press
-            if (gamepad1.a && !fanButtonBlock) {
-                fanButtonBlock = true;
-                fan.ToggleState();
-            } else if (!gamepad1.a) fanButtonBlock = false;
-
-            // Fogger Toggle on B Press
-            if (gamepad1.b && !foggerButtonBlock) {
-                foggerButtonBlock = true;
-                fogger.ToggleState();
-            } else if (!gamepad1.b) foggerButtonBlock = false;
-
-            telemetry.addLine("  Controls Guide:");
-            telemetry.addLine("Toggles: (A:Fan) (B:Fogger)");
-            telemetry.addLine();
-            telemetry.addLine("  Telemetry Info:");
-            telemetry.addData("Fan State", fan.GetState());
-            telemetry.addData("Fogger State", fogger.GetState());
-            telemetry.update();
-        }
+        fanToggle = new ButtonBlock()
+                .onTrue(() -> {fan.ToggleState();});
+        foggerToggle = new ButtonBlock()
+                .onTrue(() -> {fogger.ToggleState();});
+        fanRunFor = new ButtonBlock()
+                .onTrue(() -> {fan.RunForSeconds(timeRunFor);});
+        foggerRunFor = new ButtonBlock()
+                .onTrue(() -> {fogger.RunForSeconds(timeRunFor);});
+        dpadUp = new ButtonBlock()
+                .onTrue(() -> {timeRunFor++;});
+        dpadDown = new ButtonBlock()
+                .onTrue(() -> {timeRunFor--;});
+        devicesLock = new ButtonBlock()
+                .onTrue(() -> {fan.ToggleInput();fogger.ToggleInput();});
+    }
+    @Override
+    public void loop() {
+        buttonEvents();
+        fan.Update();
+        fogger.Update();
+        telemetry();
+    }
+    private void buttonEvents() {
+        // Simplified down all into classes that handle button blocks the same way that a normal one does
+        fanToggle.update(gamepad1.a);
+        foggerToggle.update(gamepad1.b);
+        fanRunFor.update(gamepad1.x);
+        foggerRunFor.update(gamepad1.y);
+        dpadUp.update(gamepad1.dpad_up);
+        dpadDown.update(gamepad1.dpad_down);
+        devicesLock.update(gamepad1.right_bumper);
+    }
+    private void telemetry() {
+        telemetry.addLine("  Controls Guide:");
+        telemetry.addLine("Toggles: (A:Fan) (B:Fogger)");
+        telemetry.addLine("Run For Time: (X:Fan) (Y:Fogger)");
+        telemetry.addLine("+/- RunForTime: (DPadUp:+) (DPadDown:-)");
+        telemetry.addLine();
+        telemetry.addLine("  Telemetry Info:");
+        telemetry.addData("Fan State", fan.GetState());
+        telemetry.addData("Fogger State", fogger.GetState());
+        telemetry.addData("Time Running For", timeRunFor);
+        telemetry.addData("Input State (On/Off)", "Fan: "+fan.InputState()+" Fogger:"+fogger.InputState());
+        telemetry.update();
+    }
+    @Override
+    public void stop() {
+        fan.FullShutOff();
+        fogger.FullShutOff();
     }
 }
