@@ -17,4 +17,6 @@ public class Constants {
     public static int TURRET_ERROR = 200;
     public static double TURRET_P =0.001, TURRET_I =0, TURRET_D = 0.00003;
     public static double ARM_P = 2.5, ARM_I = 0, ARM_D = .1;
+    //the unit vector that points in the direction of the arm's home position 
+    public Vector3 coordinateHome = new Vector3(1,0,0);
 }
