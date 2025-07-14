@@ -1,0 +1,122 @@
+package org.firstinspires.ftc.teamcode.susbsystems;
+
+import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.util.Util;
+
+//TODO 7/14/25 - Frank
+// - set constants
+// - account for the linkage to calculate accurate distances
+// - integrate with arm class
+
+public class LinkageExtension {
+  
+    private final double IN_TO_TICKS = 0;
+
+    //distances of arm's pivot point from turret axis when extension is fully retracted and fully extended
+    private final double MIN_LENGTH = 0;
+    private final double MAX_LENGTH = 0;
+
+    private Vector2 latestDirection = new Vector2();
+
+    private DcMotorEx motor;
+    private DigitalChannel frontLimitSwitch;
+    private DigitalChannel backLimitSwitch;
+    private boolean isBusy = false;
+    private boolean atHome, homed = false, isHoming = false;
+    //value copied from Turret class
+    private double homePower = 0.3;
+    private ElapsedTime homeTime = new ElapsedTime();
+    private double targetPosition;
+
+    //desired distance offset from the given target in inches
+    //this variable can be used to set the extension distance after setting the arm's rotation
+    private double offset;
+
+    private PIDController controller;
+
+    public boolean AUTOSTOP = true;
+
+    public LinkageExtension(HardwareMap hm) {
+        motor = hm.get(DcMotorEx.class, "linkage extension");
+        frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
+        backLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
+        controller = new PIDController(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
+    }
+    public void StartHome() {
+        //copied from turret class
+        homePower = -homePower;
+
+        isBusy = true;
+        isHoming = true;
+        homeTime.reset();
+    }
+    //ALWAYS SET THE OFFSET BEFORE MOVING!!
+    public void setOffset(double desiredOffset){offset = desiredOffset;}
+
+    public void GoTo(Vector3 targetVector) {
+        GoTo(getTargetLengthIN(targetVector));
+    }
+    //this function DOES NOT ACCOUNT FOR THE LINKAGE YET. I have code to do this in teleop 
+    public void GoTo(double targetLength) {
+        this.targetPosition = targetLength*IN_TO_TICKS;
+        isBusy = true;
+    }
+    public Vector2 getVectorTarget(Vector3 targetVector){
+        latestDirection.setFromPolar(GetTargetLength(targetVector)+MIN_LENGTH, Math.atan2(targetVector.y,targetVector.x));
+        return latestDirection;
+    }
+    public double GetTargetLengthIN(Vector3 targetVector){
+        return Universal.clamp(MIN_LENGTH, targetVector.toVector2(0).magnitude() - offset),MAX_LENGTH)-MIN_LENGTH;
+    }
+
+    public double GetPos() {return GetRawPos() / TICKS_TO_DEG;}
+    public double GetRawPos() {return motor.getCurrentPosition();}
+    public double GetTargetPos() {return targetPosition / TICKS_TO_DEG;}
+    public double GetRawTargetPos() {return targetPosition;}
+    public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.TURRET_ERROR/2;}
+    public boolean IsBusy() {return isBusy;}
+    private void rawSet(double power) {
+        motor.setPower(Util.IntClamp(power));
+    }
+    public void SetPower(double power) {
+        isBusy = false;
+        rawSet(power);
+    }
+    public void Stop() {
+        rawSet(0);
+        isBusy = false;
+        isHoming = false;
+    }
+    public void ResetEncoder() {
+        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+    public void Update() {
+        //limit switch code copied from turret. Needs to be adjusted for current setup
+        //atHome = !homeLimitSwitch.getState();
+        //if (atHome) homed = true;
+        //if (isHoming && homed) {Stop(); ResetEncoder(); }
+
+        if (isBusy) {
+            if (isHoming && !homed) {
+                    rawSet(homePower);
+                    if (homeTime.seconds() > 3) StartHome();
+            } else {
+                controller.setPID(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
+                rawSet(controller.calculate(motor.getCurrentPosition(), targetPosition));
+            }
+        }
+
+
+        if (InError() && AUTOSTOP) isBusy = false;
+    }
+    public double GetPower() {return motor.getPower();}
+    public boolean Homed() {return homed;}
+}
