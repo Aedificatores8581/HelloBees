@@ -15,8 +15,11 @@ public class Constants {
     public static final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.RADIANS,YAW_CAM, PITCH_CAM, ROLL_CAM, 0);
 
     public static int TURRET_ERROR = 200;
+
+    //TODO: we should consider moving these values into the turret, arm and extension classes before building the redesign
     public static double TURRET_P =0.001, TURRET_I =0, TURRET_D = 0.00003;
     public static double ARM_P = 2.5, ARM_I = 0, ARM_D = .1;
+    public static double EXTENSION_P = 2.5, EXTENSION_I = 0, EXTENSION_D = .1;
     //the unit vector that points in the direction of the arm's home position 
     public Vector3 coordinateHome = new Vector3(1,0,0);
 }
