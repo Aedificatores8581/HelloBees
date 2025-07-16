@@ -10,9 +10,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.util.Util;
 
-//TODO 7/14/25 - Frank
+//TODO 7/15/25 - Frank
 // - set constants
-// - account for the linkage to calculate accurate distances
+// - figure out at what angle the encoder reads 0
 // - integrate with arm class
 
 public class LinkageExtension {
@@ -22,6 +22,14 @@ public class LinkageExtension {
     //distances of arm's pivot point from turret axis when extension is fully retracted and fully extended
     private final double MIN_LENGTH = 0;
     private final double MAX_LENGTH = 0;
+  
+    private final double PIVOT_HEIGHT = 0;
+    private final double PIVOT_DISTANCE_TO_TIP = 0;
+    private final double MOTOR_OFFSET_X = 0;
+    private final double MOTOR_OFFSET_Y = 0;
+  
+    private final double LINK_1 = 0;
+    private final double LINK_2 = 0;
 
     private Vector2 latestDirection = new Vector2();
 
@@ -65,7 +73,14 @@ public class LinkageExtension {
     }
     //this function DOES NOT ACCOUNT FOR THE LINKAGE YET. I have code to do this in teleop 
     public void GoTo(double targetLength) {
-        this.targetPosition = targetLength*IN_TO_TICKS;
+        double x_attach = target_length + MIN_LENGTH - MOTOR_OFFSET_X - PIVOT_DISTANCE_TO_TIP;
+		    double y_attach = PIVOT_HEIGHT - MOTOR_OFFSET_Y;
+		
+		    double motor_angle = Math.abs(Math.asin((Math.pow(x_attach,2) + Math.pow(y_attach,2) + Math.pow(LINK_1,2) - Math.pow(LINK_2, 2)) / (2 * LINK_1 * Math.sqrt(Math.pow(x_attach ,2) + Math.pow(y_attach, 2))) - Math.atan2(x_attach, y_attach)));
+        //TODO: CONFIRM that the encoder reads 0 at motor_angle = 0
+        //if not, the stowed angle can be found using this equation
+        //Math.atan2(PIVOT_HEIGHT, MIN_LENGTH - PIVOT_DISTANCE_TO_TIP)+Math.acos((Math.pow(LINK_1,2)+Math.pow(PIVOT_HEIGHT,2)+Math.pow(MIN_LENGTH - PIVOT_DISTANCE_TO_TIP,2)-Math.pow(LINK_2,2))/2/(MIN_LENGTH - PIVOT_DISTANCE_TO_TIP)/LINK_1);
+        this.targetPosition = Math.toDegrees(motorAngle)*DEGREES_TO_ENCODER;
         isBusy = true;
     }
     public Vector2 getVectorTarget(Vector3 targetVector){
@@ -100,6 +115,7 @@ public class LinkageExtension {
     }
     public void Update() {
         //limit switch code copied from turret. Needs to be adjusted for current setup
+        //
         //atHome = !homeLimitSwitch.getState();
         //if (atHome) homed = true;
         //if (isHoming && homed) {Stop(); ResetEncoder(); }
