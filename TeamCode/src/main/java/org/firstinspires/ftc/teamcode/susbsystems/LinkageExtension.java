@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.util.Math.Vector2;
+import org.firstinspires.ftc.teamcode.util.Math.Vector3;
 import org.firstinspires.ftc.teamcode.util.Util;
 
 //TODO 7/15/25 - Frank
@@ -52,7 +54,7 @@ public class LinkageExtension {
     public boolean AUTOSTOP = true;
 
     public LinkageExtension(HardwareMap hm) {
-        motor = hm.get(DcMotorEx.class, "linkage extension");
+        motor = hm.get(DcMotorEx.class, "linkage");
         frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
         backLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
         controller = new PIDController(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
@@ -72,7 +74,7 @@ public class LinkageExtension {
         GoTo(getTargetLengthIN(targetVector));
     }
     //this function DOES NOT ACCOUNT FOR THE LINKAGE YET. I have code to do this in teleop 
-    public void GoTo(double targetLength) {
+    public void GoTo(double target_length) {
         double x_attach = target_length + MIN_LENGTH - MOTOR_OFFSET_X - PIVOT_DISTANCE_TO_TIP;
 		    double y_attach = PIVOT_HEIGHT - MOTOR_OFFSET_Y;
 		
@@ -80,20 +82,20 @@ public class LinkageExtension {
         //TODO: CONFIRM that the encoder reads 0 at motor_angle = 0
         //if not, the stowed angle can be found using this equation
         //Math.atan2(PIVOT_HEIGHT, MIN_LENGTH - PIVOT_DISTANCE_TO_TIP)+Math.acos((Math.pow(LINK_1,2)+Math.pow(PIVOT_HEIGHT,2)+Math.pow(MIN_LENGTH - PIVOT_DISTANCE_TO_TIP,2)-Math.pow(LINK_2,2))/2/(MIN_LENGTH - PIVOT_DISTANCE_TO_TIP)/LINK_1);
-        this.targetPosition = Math.toDegrees(motorAngle)*DEGREES_TO_ENCODER;
+        this.targetPosition = Math.toDegrees(motor_angle)*IN_TO_TICKS;
         isBusy = true;
     }
-    public Vector2 getVectorTarget(Vector3 targetVector){
+    public Vector2 getVectorTarget(Vector3 targetVector){ // No function for GetTargetLength
         latestDirection.setFromPolar(GetTargetLength(targetVector)+MIN_LENGTH, Math.atan2(targetVector.y,targetVector.x));
         return latestDirection;
     }
-    public double GetTargetLengthIN(Vector3 targetVector){
-        return Universal.clamp(MIN_LENGTH, targetVector.toVector2(0).magnitude() - offset),MAX_LENGTH)-MIN_LENGTH;
+    public double getTargetLengthIN(Vector3 targetVector){
+        return Util.clamp(MIN_LENGTH, targetVector.toVector2().magnitude() - offset,MAX_LENGTH)-MIN_LENGTH;
     }
 
-    public double GetPos() {return GetRawPos() / TICKS_TO_DEG;}
+    public double GetPos() {return GetRawPos() / IN_TO_TICKS;}
     public double GetRawPos() {return motor.getCurrentPosition();}
-    public double GetTargetPos() {return targetPosition / TICKS_TO_DEG;}
+    public double GetTargetPos() {return targetPosition / IN_TO_TICKS;}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.TURRET_ERROR/2;}
     public boolean IsBusy() {return isBusy;}

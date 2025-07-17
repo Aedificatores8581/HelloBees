@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.Constants;
+import org.firstinspires.ftc.teamcode.util.Math.Vector2;
+import org.firstinspires.ftc.teamcode.util.Math.Vector3;
 import org.firstinspires.ftc.teamcode.util.Util;
 
 //TODO 7/14/25 - Frank
@@ -31,11 +33,10 @@ public class Turret {
     private double homePower = 0.3;
     private ElapsedTime homeTime = new ElapsedTime();
     private double targetPosition;
-    private double targetPosition
 
     //represents the direction the turret has last been set to
     public Vector2 latestDirection = new Vector2();
-    
+
     private PIDController controller;
 
     public boolean AUTOSTOP = true;
@@ -52,9 +53,9 @@ public class Turret {
         homeTime.reset();
     }
     public void GoTo(Vector3 targetVector) {
-        GoTo(getTargetAngleDeg(targetVector));
+        GoTo(GetTargetAngleDeg(targetVector));
     }
-    
+
     public void GoTo(double targetAngle) {
         this.targetPosition = targetAngle*DEG_TO_TICKS;
         isBusy = true;
@@ -65,16 +66,16 @@ public class Turret {
     }
     //This function should go in the full system class
     //public Vector3 getVectorTarget(Vector3 targetVector, double extensionLength){return getUnitVectorTarget(targetVector).toVector3(0).add(0,0,extensionHeight).scalar(extensionLength + retractedLength);}
-    
+
     public double GetTargetAngleRad(Vector3 targetVector){
-        return Math.atan2(targetVector.y,targetVector.x,0);
+        return Math.atan2(targetVector.y,targetVector.x);
     }
     public double GetTargetAngleDeg(Vector3 targetVector){ return Math.toDegrees(GetTargetAngleRad(targetVector));}
-    public void GetTargetPosition(double targetAngle){
-    
-    public double GetPos() {return GetRawPos() / TICKS_TO_DEG;}
+    public void GetTargetPosition(double targetAngle){/*Put something here*/}
+
+    public double GetPos() {return GetRawPos() / DEG_TO_TICKS;}
     public double GetRawPos() {return motor.getCurrentPosition();}
-    public double GetTargetPos() {return targetPosition / TICKS_TO_DEG;}
+    public double GetTargetPos() {return targetPosition / DEG_TO_TICKS;}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.TURRET_ERROR/2;}
     public boolean IsBusy() {return isBusy;}

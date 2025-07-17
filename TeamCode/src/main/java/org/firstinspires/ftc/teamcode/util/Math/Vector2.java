@@ -86,8 +86,8 @@ public class Vector2 {
 
     //creates a Vector3 object from the Vector3 object, excluding one axis
     //axis = 0 returns {x,y,0}, 1 returns {x,0,y}, 2 returns {0,x,y}
-    public Vector2 toVector3(int axis){
-        return new Vector3(x * Math.min(2-axis,1), x*Math.max(axis-1,0) + y*Math.max(1-axis,0), y*Math.min(axis,1))
+    public Vector3 toVector3(int axis){
+        return new Vector3(x * Math.min(2-axis,1), x*Math.max(axis-1,0) + y*Math.max(1-axis,0), y*Math.min(axis,1));
     }
     //flips the x and y values of the vector
     public void flipAxes(){

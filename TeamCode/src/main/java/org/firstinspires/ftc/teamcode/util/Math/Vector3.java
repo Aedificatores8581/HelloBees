@@ -22,9 +22,9 @@ public class Vector3 {
     }
     //i j and k are unit vectors 
     public Vector3(double i, double j, double k, double m){
-        x = magnitude / Math.sqrt(i * i + k * k + j * j) * i;
-        y = magnitude / Math.sqrt(i * i + k * k + j * j) * j;
-        z = magnitude / Math.sqrt(i * i + k * k + j * j) * k;
+        x = m / Math.sqrt(i * i + k * k + j * j) * i;
+        y = m / Math.sqrt(i * i + k * k + j * j) * j;
+        z = m / Math.sqrt(i * i + k * k + j * j) * k;
     }
 
     public Vector3(Vector3 componentForm, double magnitude){
@@ -75,7 +75,9 @@ public class Vector3 {
 
         return result;
     }
-
+    public Vector2 toVector2() {
+        return new Vector2(x,y);
+    }
     //Returns angle between two vectors in radians.
     public double angleBetween(Vector3 vector) {
         return Math.acos(this.dot(vector) / (this.magnitude() * vector.magnitude()));
