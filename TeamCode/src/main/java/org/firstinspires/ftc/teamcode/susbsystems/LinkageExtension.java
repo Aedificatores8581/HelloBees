@@ -19,11 +19,11 @@ import org.firstinspires.ftc.teamcode.util.Util;
 
 public class LinkageExtension {
   
-    private final double IN_TO_TICKS = 0;
+    private final double IN_TO_TICKS = -246/13.5;
 
     //distances of arm's pivot point from turret axis when extension is fully retracted and fully extended
     private final double MIN_LENGTH = 0;
-    private final double MAX_LENGTH = 0;
+    private final double MAX_LENGTH = 13.5;
   
     private final double PIVOT_HEIGHT = 0;
     private final double PIVOT_DISTANCE_TO_TIP = 0;
@@ -71,7 +71,7 @@ public class LinkageExtension {
     public void setOffset(double desiredOffset){offset = desiredOffset;}
 
     public void GoTo(Vector3 targetVector) {
-        GoTo(getTargetLengthIN(targetVector));
+        GoTo(GetTargetLengthIN(targetVector));
     }
     //this function DOES NOT ACCOUNT FOR THE LINKAGE YET. I have code to do this in teleop 
     public void GoTo(double target_length) {
@@ -89,7 +89,7 @@ public class LinkageExtension {
         latestDirection.setFromPolar(GetTargetLengthIN(targetVector)+MIN_LENGTH, Math.atan2(targetVector.y,targetVector.x));
         return latestDirection;
     }
-    public double getTargetLengthIN(Vector3 targetVector){
+    public double GetTargetLengthIN(Vector3 targetVector){
         return Util.clamp(MIN_LENGTH, targetVector.toVector2().magnitude() - offset,MAX_LENGTH)-MIN_LENGTH;
     }
 
