@@ -86,7 +86,7 @@ public class LinkageExtension {
         isBusy = true;
     }
     public Vector2 getVectorTarget(Vector3 targetVector){ // No function for GetTargetLength
-        latestDirection.setFromPolar(GetTargetLength(targetVector)+MIN_LENGTH, Math.atan2(targetVector.y,targetVector.x));
+        latestDirection.setFromPolar(GetTargetLengthIN(targetVector)+MIN_LENGTH, Math.atan2(targetVector.y,targetVector.x));
         return latestDirection;
     }
     public double getTargetLengthIN(Vector3 targetVector){
