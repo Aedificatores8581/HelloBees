@@ -22,7 +22,12 @@ import org.firstinspires.ftc.teamcode.util.Util;
 // - move getVectorTarget() to the full system class, as it needs arm and extension information
 
 
-public class Turret {
+public class Turret725 {
+    
+    public static final double PID_P_DEFAULT = 0.001;
+    public static final double PID_I_DEFAULT = 0;
+    public static final double PID_D_DEFAULT = 0.00003;
+    private double pCoef = PID_P_DEFAULT, iCoef = PID_I_DEFAULT, dCoef = PID_D_DEFAULT;
     //changed this variable from TICKS_TO_DEG to DEG_TO_TICKS for accuracy
     private final double DEG_TO_TICKS = 5900d/90d;
 
@@ -40,12 +45,20 @@ public class Turret {
     private PIDController controller;
 
     public boolean AUTOSTOP = true;
-
-    public Turret(HardwareMap hm) {
+    
+    public Turret725(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "turret");
         homeLimitSwitch = hm.get(DigitalChannel.class, "turret_home");
-        controller = new PIDController(Constants.TURRET_P, Constants.TURRET_I, Constants.TURRET_D);
+        controller = new PIDController(pCoef, iCoef, dCoef);
     }
+    public Turret725(HardwareMap hm, double P, double I, double D){
+        setPID(P,I,D);
+        this.Turret(hm);
+    }
+    public void setPID(double P, doublue I, double D){
+        pCoef = P; iCoef = I; dCoef = D;
+    }
+    
     public void StartHome() {
         homePower = -homePower;
         isBusy = true;
