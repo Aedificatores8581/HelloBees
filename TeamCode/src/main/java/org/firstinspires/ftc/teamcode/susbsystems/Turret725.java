@@ -53,7 +53,7 @@ public class Turret725 {
     }
     public Turret725(HardwareMap hm, double P, double I, double D){
         setPID(P,I,D);
-        this.Turret(hm);
+        this.Turret725(hm);
     }
     public void setPID(double P, doublue I, double D){
         pCoef = P; iCoef = I; dCoef = D;
