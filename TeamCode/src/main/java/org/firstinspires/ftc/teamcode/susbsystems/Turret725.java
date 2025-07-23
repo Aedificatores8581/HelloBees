@@ -118,7 +118,7 @@ public class Turret725 {
                     rawSet(homePower);
                     if (homeTime.seconds() > 3) StartHome();
             } else {
-                controller.setPID(Constants.TURRET_P, Constants.TURRET_I, Constants.TURRET_D);
+                controller.setPID(pCoef, iCoef, dCoef);
                 rawSet(controller.calculate(motor.getCurrentPosition(), targetPosition));
             }
         }
