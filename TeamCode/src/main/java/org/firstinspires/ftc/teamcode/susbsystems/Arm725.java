@@ -17,9 +17,9 @@ import org.firstinspires.ftc.teamcode.util.Util;
 // - Add error and PID constants to Constants.java
 
 public class Arm725 {
-    private static final double PID_P_DEFAULT = 0;
-    private static final double PID_I_DEFAULT = 0;
-    private static final double PID_D_DEFAULT = 0;
+    public static final double PID_P_DEFAULT = 0;
+    public static final double PID_I_DEFAULT = 0;
+    public static final double PID_D_DEFAULT = 0;
   
     private final double DEG_TO_TICKS = 0;
     private final double PIVOT_HEIGHT = 0;
@@ -54,12 +54,12 @@ public class Arm725 {
 
     public boolean AUTOSTOP = true;
 
-    public ARM725(HardwareMap hm) {
+    public Arm725(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "arm");
         controller = new PIDController(Constants.ARM725_P, Constants.ARM725_I, Constants.ARM725_D);
         pot1 = hardwareMap.get(AnalogInput.class, "pot1");
     }
-    public ARM725(HardwareMap hm, double P, double I, double D){
+    public Arm725(HardwareMap hm, double P, double I, double D){
         setPID(P,I,D);
         this.ARM725(hm);
     }
