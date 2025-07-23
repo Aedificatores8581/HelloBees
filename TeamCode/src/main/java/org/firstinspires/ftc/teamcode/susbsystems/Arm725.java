@@ -56,7 +56,7 @@ public class Arm725 {
 
     public Arm725(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "arm");
-        controller = new PIDController(Constants.ARM725_P, Constants.ARM725_I, Constants.ARM725_D);
+        controller = new PIDController(pCoef, iCoef, dCoef);
         pot1 = hardwareMap.get(AnalogInput.class, "pot1");
     }
     public Arm725(HardwareMap hm, double P, double I, double D){
