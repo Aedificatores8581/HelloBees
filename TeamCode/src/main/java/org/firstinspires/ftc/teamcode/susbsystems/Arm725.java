@@ -17,13 +17,13 @@ import org.firstinspires.ftc.teamcode.util.Util;
 // - Add error and PID constants to Constants.java
 
 public class Arm725 {
+    private static final double PID_P_DEFAULT = 0;
+    private static final double PID_I_DEFAULT = 0;
+    private static final double PID_D_DEFAULT = 0;
   
     private final double DEG_TO_TICKS = 0;
-  
     private final double PIVOT_HEIGHT = 0;
-  
     private final double PIVOT_TO_WRIST = 0;
-
     private final double STOWED_ANGLE_DEG = 0;
 
     // the value in volts the potentiometer reads at stowed position
@@ -45,7 +45,7 @@ public class Arm725 {
     private double homePower = 0.3;
     private ElapsedTime homeTime = new ElapsedTime();
     private double targetPosition;
-
+    private double pCoef = PID_P_DEFAULT, iCoef = PID_I_DEFAULT, dCoef = PID_D_DEFAULT;
     //desired distance offset from the given target in inches
     //this variable can be used to set the extension distance after setting the arm's rotation
     private double offset;
@@ -58,6 +58,13 @@ public class Arm725 {
         motor = hm.get(DcMotorEx.class, "arm");
         controller = new PIDController(Constants.ARM725_P, Constants.ARM725_I, Constants.ARM725_D);
         pot1 = hardwareMap.get(AnalogInput.class, "pot1");
+    }
+    public ARM725(HardwareMap hm, double P, double I, double D){
+        setPID(P,I,D);
+        this.ARM725(hm);
+    }
+    public void setPID(double P, doublue I, double D){
+        pCoef = P; iCoef = I; dCoef = D;
     }
     public void StartHome() {
         //copied from turret class
@@ -119,7 +126,7 @@ public class Arm725 {
                     rawSet(homePower);
                     if (homeTime.seconds() > 3) StartHome();
             } else {
-                controller.setPID(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
+                controller.setPID(pCoeff, iCoef, dCoef);
                 rawSet(controller.calculate(GetPos(), targetPosition));
             }
         }
