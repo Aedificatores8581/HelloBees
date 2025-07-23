@@ -17,8 +17,12 @@ import org.firstinspires.ftc.teamcode.util.Util;
 // - figure out at what angle the encoder reads 0
 // - integrate with arm class
 
-public class LinkageExtension {
+public class LinkageExtension725 {
   
+    public static final double PID_P_DEFAULT = 2.5;
+    public static final double PID_I_DEFAULT = 0;
+    public static final double PID_D_DEFAULT = 0.1;
+    private double pCoef = PID_P_DEFAULT, iCoef = PID_I_DEFAULT, dCoef = PID_D_DEFAULT;
     private final double IN_TO_TICKS = -246/13.5;
 
     //distances of arm's pivot point from turret axis when extension is fully retracted and fully extended
@@ -52,12 +56,16 @@ public class LinkageExtension {
     private PIDController controller;
 
     public boolean AUTOSTOP = true;
-
-    public LinkageExtension(HardwareMap hm) {
+   
+    public LinkageExtension725(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "linkage");
         frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
         backLimitSwitch = hm.get(DigitalChannel.class, "back_limit");
-        controller = new PIDController(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
+        controller = new PIDController(pCoef, iCoef, dCoef);
+    }
+    public LinkageExtension725(HardwareMap hm, double P, double I, double D){
+        setPID(P,I,D);
+        this.LinkageExtension725(hm);
     }
     public void StartHome() {
         //copied from turret class
@@ -67,7 +75,7 @@ public class LinkageExtension {
         isHoming = true;
         homeTime.reset();
     }
-    //ALWAYS SET THE OFFSET BEFORE MOVING!!
+    //ALWAYS SET THE OFFSET BEFORE MOVING!! Usually, this will be the extended length of the arm
     public void setOffset(double desiredOffset){offset = desiredOffset;}
 
     public void GoTo(Vector3 targetVector) {
@@ -116,18 +124,17 @@ public class LinkageExtension {
         motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
     public void Update() {
-        //limit switch code copied from turret. Needs to be adjusted for current setup
-        //
-        //atHome = !homeLimitSwitch.getState();
-        //if (atHome) homed = true;
-        //if (isHoming && homed) {Stop(); ResetEncoder(); }
+
+        atHome = !backLimitSwitch.getState();
+        if (atHome) homed = true;
+	if (isHoming && homed) {Stop(); ResetEncoder(); }
 
         if (isBusy) {
             if (isHoming && !homed) {
                     rawSet(homePower);
                     if (homeTime.seconds() > 3) StartHome();
             } else {
-                controller.setPID(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
+                controller.setPID(pCoef, iCoef, dCoef);
                 rawSet(controller.calculate(motor.getCurrentPosition(), targetPosition));
             }
         }
