@@ -56,7 +56,7 @@ public class LinkageExtension {
     public LinkageExtension(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "linkage");
         frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
-        backLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
+        backLimitSwitch = hm.get(DigitalChannel.class, "back_limit");
         controller = new PIDController(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
     }
     public void StartHome() {
