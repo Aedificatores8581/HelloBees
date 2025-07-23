@@ -1,5 +1,13 @@
 package org.firstinspires.ftc.teamcode.util;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
+import org.firstinspires.ftc.vision.apriltag.AprilTagPoseFtc;
+import org.firstinspires.ftc.vision.apriltag.AprilTagPoseRaw;
+import org.opencv.core.Point;
+
 import java.util.Arrays;
 
 public class Util {
@@ -24,8 +32,26 @@ public class Util {
         if (input == 0) return 0;
         else return range(input, min, max);
     }
-
-
+    public static double avd(double a, double b) {return (a+b)/2;} // Get mean of 2 doubles
+    public static Point avPoint(Point a, Point b) { return new Point(avd(a.x,b.x), avd(a.y,b.y));} // Get mean of 2 points
+    public static AprilTagPoseFtc avATPoseFtc(AprilTagPoseFtc a, AprilTagPoseFtc b) {
+        return new AprilTagPoseFtc(
+                avd(a.x,b.x), avd(a.y,b.y), avd(a.z,b.z),
+                avd(a.yaw,b.yaw), avd(a.pitch,b.pitch), avd(a.roll,b.roll),
+                avd(a.range,b.range), avd(a.bearing,b.bearing), avd(a.elevation,b.elevation)
+        );
+    }
+    public static AprilTagPoseRaw avATPoseRaw(AprilTagPoseRaw a, AprilTagPoseRaw b) {
+        return new AprilTagPoseRaw(avd(a.x,b.x),avd(a.y,b.y),avd(a.z,b.z),a.R);
+    }
+    public static Pose3D avPose3D(Pose3D a, Pose3D b) {
+        Position aPos = a.getPosition(), bPos = b.getPosition();
+        YawPitchRollAngles aRot = a.getOrientation(), bRot = b.getOrientation();
+        return new Pose3D(
+                new Position(a.getPosition().unit, avd(aPos.x, bPos.x), avd(aPos.y, bPos.y), avd(aPos.z, bPos.z), a.getPosition().acquisitionTime),
+                new YawPitchRollAngles(AngleUnit.DEGREES, avd(aRot.getYaw(),bRot.getYaw()),avd(aRot.getPitch(),bRot.getPitch()),avd(aRot.getRoll(),bRot.getRoll()),aRot.getAcquisitionTime())
+        );
+    }
 
 
 

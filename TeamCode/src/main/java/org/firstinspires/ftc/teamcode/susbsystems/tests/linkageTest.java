@@ -3,15 +3,15 @@ package org.firstinspires.ftc.teamcode.susbsystems.tests;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import org.firstinspires.ftc.teamcode.susbsystems.LinkageExtension;
+import org.firstinspires.ftc.teamcode.susbsystems.LinkageExtension725;
 
-@TeleOp (name = "Linkage Extension Test", group = "SubsysTest")
+@TeleOp (name = "Linkage Extension725 Test", group = "SubsysTest")
 public class linkageTest extends OpMode {
-    LinkageExtension linkage;
+    LinkageExtension725 linkage;
 
     @Override
     public void init() {
-        linkage = new LinkageExtension(hardwareMap);
+        linkage = new LinkageExtension725(hardwareMap);
         linkage.StartHome();
     }
 

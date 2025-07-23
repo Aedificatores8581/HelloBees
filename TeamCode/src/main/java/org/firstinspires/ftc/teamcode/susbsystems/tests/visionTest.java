@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.Vision;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagPoseFtc;
+import org.openftc.apriltag.AprilTagPose;
 
 import java.util.ArrayList;
 
@@ -17,11 +19,15 @@ public class visionTest extends OpMode {
     }
     @Override
     public void loop() {
+        vision.Update();
         ArrayList<AprilTagDetection> detections = vision.GetDetections();
         if (detections != null)
-        for (AprilTagDetection detection : detections) {
-            telemetry.addData("Tag "+detection.id+" x", detection.ftcPose.x);
-        }
+            for (AprilTagDetection detection : detections) {
+                telemetry.addData("Tag "+detection.id+" x", detection.ftcPose.x);
+            }
+        telemetry.addData("PerTagAvgPoseSolveTime", vision.processor.getPerTagAvgPoseSolveTime());
+        AprilTagPoseFtc avgPose = vision.getAverageDetection().ftcPose;
+        telemetry.addData("Average Tag", "x:"+avgPose.x+" y:"+avgPose.y+" z:"+avgPose.z);
         telemetry.update();
     }
 }

@@ -58,14 +58,17 @@ public class LinkageExtension725 {
     public boolean AUTOSTOP = true;
    
     public LinkageExtension725(HardwareMap hm) {
-        motor = hm.get(DcMotorEx.class, "linkage");
-        frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
-        backLimitSwitch = hm.get(DigitalChannel.class, "back_limit");
+        init(hm);
         controller = new PIDController(pCoef, iCoef, dCoef);
     }
     public LinkageExtension725(HardwareMap hm, double P, double I, double D){
-        setPID(P,I,D);
-        this.LinkageExtension725(hm);
+        init(hm);
+        controller.setPID(P,I,D);
+    }
+    private void init(HardwareMap hm) {
+        motor = hm.get(DcMotorEx.class, "linkage");
+        frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
+        backLimitSwitch = hm.get(DigitalChannel.class, "back_limit");
     }
     public void StartHome() {
         //copied from turret class

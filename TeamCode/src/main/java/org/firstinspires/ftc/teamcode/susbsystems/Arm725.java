@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -55,15 +56,18 @@ public class Arm725 {
     public boolean AUTOSTOP = true;
 
     public Arm725(HardwareMap hm) {
-        motor = hm.get(DcMotorEx.class, "arm");
-        controller = new PIDController(pCoef, iCoef, dCoef);
-        pot1 = hardwareMap.get(AnalogInput.class, "pot1");
+        init(hm);
     }
     public Arm725(HardwareMap hm, double P, double I, double D){
+        init(hm);
         setPID(P,I,D);
-        this.ARM725(hm);
     }
-    public void setPID(double P, doublue I, double D){
+    private void init(HardwareMap hm) {
+        motor = hm.get(DcMotorEx.class, "arm");
+        controller = new PIDController(pCoef, iCoef, dCoef);
+        pot1 = hm.get(AnalogInput.class, "pot1");
+    }
+    public void setPID(double P, double I, double D){
         pCoef = P; iCoef = I; dCoef = D;
     }
     public void StartHome() {
@@ -87,10 +91,10 @@ public class Arm725 {
         return latestDirection;
     }
     public double getTargetAngleRad(Vector3 targetVector){
-        return Util.clamp(Math.PI/-2, Math.atan2(targetVector.z,targetVector.toVector2().getMagnitude()),Math.PI/2);
+        return Util.clamp(Math.PI/-2, Math.atan2(targetVector.z,targetVector.toVector2().magnitude()),Math.PI/2);
     }
-    public double getTargetAngleDeg(Vector3 targetVector){00
-        return Math.toDegrees(getTargetAngleRad());
+    public double getTargetAngleDeg(Vector3 targetVector){
+        return Math.toDegrees(getTargetAngleRad(targetVector));
     }
     public double GetPos() {return GetRawPos() / DEG_TO_VOLT + POT_0DEG_READING;}
     public double GetRawPos() {return pot1.getVoltage();}
@@ -126,7 +130,7 @@ public class Arm725 {
                     rawSet(homePower);
                     if (homeTime.seconds() > 3) StartHome();
             } else {
-                controller.setPID(pCoeff, iCoef, dCoef);
+                controller.setPID(pCoef, iCoef, dCoef);
                 rawSet(controller.calculate(GetPos(), targetPosition));
             }
         }

@@ -47,15 +47,18 @@ public class Turret725 {
     public boolean AUTOSTOP = true;
     
     public Turret725(HardwareMap hm) {
+        init(hm);
+    }
+    public Turret725(HardwareMap hm, double P, double I, double D){
+        init(hm);
+        setPID(P,I,D);
+    }
+    private void init(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "turret");
         homeLimitSwitch = hm.get(DigitalChannel.class, "turret_home");
         controller = new PIDController(pCoef, iCoef, dCoef);
     }
-    public Turret725(HardwareMap hm, double P, double I, double D){
-        setPID(P,I,D);
-        this.Turret725(hm);
-    }
-    public void setPID(double P, doublue I, double D){
+    public void setPID(double P, double I, double D){
         pCoef = P; iCoef = I; dCoef = D;
     }
     
