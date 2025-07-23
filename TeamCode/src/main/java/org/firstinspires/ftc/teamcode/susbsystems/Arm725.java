@@ -17,9 +17,9 @@ import org.firstinspires.ftc.teamcode.util.Util;
 // - Add error and PID constants to Constants.java
 
 public class Arm725 {
-    public static final double PID_P_DEFAULT = 0;
+    public static final double PID_P_DEFAULT = 2.5;
     public static final double PID_I_DEFAULT = 0;
-    public static final double PID_D_DEFAULT = 0;
+    public static final double PID_D_DEFAULT = .1;
   
     private final double DEG_TO_TICKS = 0;
     private final double PIVOT_HEIGHT = 0;
