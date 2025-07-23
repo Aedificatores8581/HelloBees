@@ -92,9 +92,9 @@ public class Arm725 {
     public double getTargetAngleDeg(Vector3 targetVector){00
         return Math.toDegrees(getTargetAngleRad());
     }
-    public double GetPos() {return GetRawPos() / DEG_TO_VOLT;}
+    public double GetPos() {return GetRawPos() / DEG_TO_VOLT + POT_0DEG_READING;}
     public double GetRawPos() {return pot1.getVoltage();}
-    public double GetTargetPos() {return targetPosition / DEG_TO_VOLT;}
+    public double GetTargetPos() {return (targetPosition - POT_0DEG_READING) / DEG_TO_VOLT;}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.ARM_ERROR/2;}
     public boolean IsBusy() {return isBusy;}
