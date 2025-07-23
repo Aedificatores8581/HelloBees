@@ -12,9 +12,9 @@ import org.firstinspires.ftc.teamcode.util.Math.Vector2;
 import org.firstinspires.ftc.teamcode.util.Math.Vector3;
 import org.firstinspires.ftc.teamcode.util.Util;
 
-//TODO 7/22/25 - Frank
+//TODO 7/23/25 - Frank
 // - set constants
-// - Add potentiometer / encoder code and add arm PID
+// - Add error and PID constants to Constants.java
 
 public class Arm725 {
   
@@ -25,6 +25,13 @@ public class Arm725 {
     private final double PIVOT_TO_WRIST = 0;
 
     private final double STOWED_ANGLE_DEG = 0;
+
+    // the value in volts the potentiometer reads at stowed position
+    private final double POT_STOWED_READING = 0;
+    // the value in volts the potentiometer reads when the arm points straight ahead
+    private final double POT_0DEG_READING = 0;
+    private final double DEG_TO_VOLT = (POT_STOWED_READING - POT_0DEG_READING) / STOWED_ANGLE_DEG;
+    private final double RAD_TO_VOLT = Math.toRadians(DEG_TO_VOLT);
 
     private Vector2 latestDirection = new Vector2();
   
@@ -47,11 +54,9 @@ public class Arm725 {
 
     public boolean AUTOSTOP = true;
 
-    public LinkageExtension(HardwareMap hm) {
-        motor = hm.get(DcMotorEx.class, "linkage");
-        frontLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
-        backLimitSwitch = hm.get(DigitalChannel.class, "front_limit");
-        controller = new PIDController(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
+    public ARM725(HardwareMap hm) {
+        motor = hm.get(DcMotorEx.class, "arm");
+        controller = new PIDController(Constants.ARM725_P, Constants.ARM725_I, Constants.ARM725_D);
         pot1 = hardwareMap.get(AnalogInput.class, "pot1");
     }
     public void StartHome() {
@@ -62,18 +67,11 @@ public class Arm725 {
         isHoming = true;
         homeTime.reset();
     }
-    //ALWAYS SET THE OFFSET BEFORE MOVING!!
-    public void setOffset(double desiredOffset){offset = desiredOffset;}
-
     public void GoTo(Vector3 targetVector) {
         GoTo(targetVector.z);
     }
-    //this function DOES NOT ACCOUNT FOR THE LINKAGE YET. I have code to do this in teleop 
     public void GoTo(double target_height) {
         
-        //TODO: CONFIRM that the encoder reads 0 at motor_angle = 0
-        //if not, the stowed angle can be found using this equation
-        //Math.atan2(PIVOT_HEIGHT, MIN_LENGTH - PIVOT_DISTANCE_TO_TIP)+Math.acos((Math.pow(LINK_1,2)+Math.pow(PIVOT_HEIGHT,2)+Math.pow(MIN_LENGTH - PIVOT_DISTANCE_TO_TIP,2)-Math.pow(LINK_2,2))/2/(MIN_LENGTH - PIVOT_DISTANCE_TO_TIP)/LINK_1);
         this.targetPosition = Math.toDegrees(Math.asin(target_height/PIVOT_TO_WRIST)*DEG_TO_TICKS);
         isBusy = true;
     }
@@ -84,14 +82,14 @@ public class Arm725 {
     public double getTargetAngleRad(Vector3 targetVector){
         return Util.clamp(Math.PI/-2, Math.atan2(targetVector.z,targetVector.toVector2().getMagnitude()),Math.PI/2);
     }
-    public double getTargetAngleDeg(Vector3 targetVector){
+    public double getTargetAngleDeg(Vector3 targetVector){00
         return Math.toDegrees(getTargetAngleRad());
     }
-    public double GetPos() {return GetRawPos() / IN_TO_TICKS;}
-    public double GetRawPos() {return motor.getCurrentPosition();}
-    public double GetTargetPos() {return targetPosition / IN_TO_TICKS;}
+    public double GetPos() {return GetRawPos() / DEG_TO_VOLT;}
+    public double GetRawPos() {return pot1.getVoltage();}
+    public double GetTargetPos() {return targetPosition / DEG_TO_VOLT;}
     public double GetRawTargetPos() {return targetPosition;}
-    public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.TURRET_ERROR/2;}
+    public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.ARM_ERROR/2;}
     public boolean IsBusy() {return isBusy;}
     private void rawSet(double power) {
         motor.setPower(Util.IntClamp(power));
@@ -122,7 +120,7 @@ public class Arm725 {
                     if (homeTime.seconds() > 3) StartHome();
             } else {
                 controller.setPID(Constants.EXTENSION_P, Constants.EXTENSION_I, Constants.EXTENSION_D);
-                rawSet(controller.calculate(motor.getCurrentPosition(), targetPosition));
+                rawSet(controller.calculate(GetPos(), targetPosition));
             }
         }
 
