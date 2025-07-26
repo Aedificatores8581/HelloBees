@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.LinkageExtension725;
 
-@TeleOp (name = "Linkage Extension725 Test", group = "SubsysTest")
+@TeleOp (name = "Linkage Extension Test", group = "SubsysTest")
 public class linkageTest extends OpMode {
     LinkageExtension725 linkage;
 

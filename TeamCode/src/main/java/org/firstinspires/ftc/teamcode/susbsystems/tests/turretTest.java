@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.susbsystems.Turret725;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 
-@TeleOp (name = "Turret725 Test", group = "SubsysTest")
+@TeleOp (name = "Turret Test", group = "SubsysTest")
 public class turretTest extends LinearOpMode {
     Turret725 Turret725;
     ButtonBlock runToPos, stopTurret725, dpadUp, dpadDown;

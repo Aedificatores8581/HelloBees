@@ -22,7 +22,7 @@ public class Arm725 {
     public static final double PID_I_DEFAULT = 0;
     public static final double PID_D_DEFAULT = .1;
   
-    private final double DEG_TO_TICKS = 0;
+    private final double DEG_TO_TICKS = 0.0122222;
     private final double PIVOT_HEIGHT = 0;
     private final double PIVOT_TO_WRIST = 0;
     private final double STOWED_ANGLE_DEG = 0;

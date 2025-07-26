@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.susbsystems;
 import static org.firstinspires.ftc.teamcode.util.Util.avATPoseFtc;
 import static org.firstinspires.ftc.teamcode.util.Util.avATPoseRaw;
 import static org.firstinspires.ftc.teamcode.util.Util.avPose3D;
-import static org.firstinspires.ftc.teamcode.util.Util.avd;
 import static org.firstinspires.ftc.teamcode.util.Util.avPoint;
 
 import android.util.Size;
@@ -14,8 +13,6 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
-import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationIdentity;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -24,21 +21,22 @@ import org.opencv.core.Point;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 
-public class Vision {
+public class Vision725 {
     public static boolean SORT_BY_X = false;
 
     CameraName webcam;
     public VisionPortal portal;
     public AprilTagProcessor processor;
     ArrayList<AprilTagDetection> detections;
+    ArrayList<AprilTagDetection> freshDetections;
+    ArrayList<AprilTagDetection> detectionsForAvg;
     final int width = 640, height = 480;
     private boolean gettingAvg = false;
     private int avgPasses;
     private int targetId = -1;
     private AprilTagDetection avgDetection;
-    public Vision(HardwareMap hm) {
+    public Vision725(HardwareMap hm) {
         webcam = hm.get(WebcamName.class, "Webcam 1");
         processor = new AprilTagProcessor.Builder()
                 .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
@@ -54,40 +52,46 @@ public class Vision {
     }
     public void Update() {
         detections = processor.getDetections();
+        freshDetections = processor.getFreshDetections();
         if (SORT_BY_X) {
-            Collections.sort(detections, new Comparator<AprilTagDetection>() {
-                public int compare(AprilTagDetection c1, AprilTagDetection c2) {
-                    if (c1.ftcPose.x > c2.ftcPose.x) return -1;
-                    if (c1.ftcPose.x < c2.ftcPose.x) return 1;
-                    return 0;
-                }
-            });
+            sortByX(detections);
+            sortByX(freshDetections);
         }
-        for (AprilTagDetection detection : detections) {
+        if (freshDetections != null) {
+            for (AprilTagDetection detection : freshDetections) {
 
-            if (gettingAvg && detection.id == targetId) {
-                if (avgDetection != null)
-                    avgDetection = averageDetection(avgDetection, detection);
-                else
-                    avgDetection = detection;
+                if (gettingAvg && detection.id == targetId) {
+                    detectionsForAvg.add(detection);
+                }
             }
         }
     }
     public void StartAvg(int id) {
+        detectionsForAvg = new ArrayList<AprilTagDetection>();
+        avgDetection = null;
         targetId = id;
         gettingAvg = true;
     }
-    public void StopAvg() {targetId = -1; gettingAvg = false;}
+    public void StopAvg() {
+        if (avgDetection == null) avgDetection = detectionsForAvg.get(0);
+        for (AprilTagDetection detection : detectionsForAvg) {
+            avgDetection = averageDetection(avgDetection, detection);
+        }
+        targetId = -1; gettingAvg = false;
+    }
     public AprilTagDetection getAverageDetection() {
         return avgDetection;
     }
     public ArrayList<AprilTagDetection> GetDetections() { return detections; }
 
     private AprilTagDetection averageDetection(AprilTagDetection detection1, AprilTagDetection detection2) {
-        Point[] avgCorners = new Point[detection1.corners.length];
-        for (int i = 0;i<detection1.corners.length;i++) {
-            avgCorners[i] = avPoint(detection1.corners[i], detection2.corners[i]);
-        }
+        Point[] avgCorners;
+        if (detection1.corners != null) {
+            avgCorners = new Point[detection1.corners.length];
+            for (int i = 0;i<detection1.corners.length;i++) {
+                avgCorners[i] = avPoint(detection1.corners[i], detection2.corners[i]);
+            }
+        } else avgCorners = null;
 
         AprilTagDetection output = new AprilTagDetection(
                 detection1.id, detection1.hamming, detection1.decisionMargin,
@@ -101,5 +105,13 @@ public class Vision {
         );
         return output;
     }
-
+    public void sortByX(ArrayList<AprilTagDetection> detections) {
+        Collections.sort(detections, new Comparator<AprilTagDetection>() {
+            public int compare(AprilTagDetection c1, AprilTagDetection c2) {
+                if (c1.ftcPose.x > c2.ftcPose.x) return -1;
+                if (c1.ftcPose.x < c2.ftcPose.x) return 1;
+                return 0;
+            }
+        });
+    }
 }
