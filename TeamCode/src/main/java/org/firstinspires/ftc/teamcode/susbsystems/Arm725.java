@@ -22,15 +22,15 @@ public class Arm725 {
     public static final double PID_I_DEFAULT = 0;
     public static final double PID_D_DEFAULT = .1;
   
-    private final double DEG_TO_TICKS = 0.0122222;
+    private final double DEG_TO_TICKS = 0.0122222; // copied from teleop, needs re-measured
     private final double PIVOT_HEIGHT = 0;
     private final double PIVOT_TO_WRIST = 0;
-    private final double STOWED_ANGLE_DEG = 0;
+    private final double STOWED_ANGLE_DEG = -90;
 
     // the value in volts the potentiometer reads at stowed position
-    private final double POT_STOWED_READING = 0;
+    private final double POT_STOWED_READING = 0.495;
     // the value in volts the potentiometer reads when the arm points straight ahead
-    private final double POT_0DEG_READING = 0;
+    private final double POT_0DEG_READING = 1.32;
     private final double DEG_TO_VOLT = (POT_STOWED_READING - POT_0DEG_READING) / STOWED_ANGLE_DEG;
     private final double RAD_TO_VOLT = Math.toRadians(DEG_TO_VOLT);
 

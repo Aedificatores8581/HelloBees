@@ -26,8 +26,8 @@ public class LinkageExtension725 {
     private final double IN_TO_TICKS = -246/13.5;
 
     //distances of arm's pivot point from turret axis when extension is fully retracted and fully extended
-    private final double MIN_LENGTH = 0;
-    private final double MAX_LENGTH = 13.5;
+    private final double MIN_LENGTH = 10.75;
+    private final double MAX_LENGTH = 24.25;
   
     private final double PIVOT_HEIGHT = 0;
     private final double PIVOT_DISTANCE_TO_TIP = 0;
