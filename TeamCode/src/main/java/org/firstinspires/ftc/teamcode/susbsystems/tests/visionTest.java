@@ -13,12 +13,13 @@ import java.util.ArrayList;
 @TeleOp (name = "Vision Test", group = "SubsysTest")
 public class visionTest extends OpMode {
     Vision725 vision;
-    ButtonBlock toggleAvg;
+    ButtonBlock toggleAvg, toggleUFD;
     boolean averaging = false;
     @Override
     public void init() {
         vision = new Vision725(hardwareMap);
-        toggleAvg = new ButtonBlock() . onTrue(() -> {toggleAvg();});
+        toggleAvg = new ButtonBlock() .onTrue(() -> {toggleAvg();});
+        toggleUFD = new ButtonBlock() .onTrue(() -> {toggleUFD();});
     }
     @Override
     public void start() {
@@ -26,6 +27,7 @@ public class visionTest extends OpMode {
     @Override
     public void loop() {
         toggleAvg.update(gamepad1.a);
+        toggleUFD.update(gamepad1.b);
         vision.Update();
         ArrayList<AprilTagDetection> detections = vision.GetDetections();
         if (detections != null)
@@ -34,8 +36,10 @@ public class visionTest extends OpMode {
                 telemetry.addLine(String.format("id: %03d x: %.2f y: %.2f z: %.2f", detection.id, detPose.x, detPose.y, detPose.z) );
             }
         telemetry.addData("PerTagAvgPoseSolveTime", vision.processor.getPerTagAvgPoseSolveTime());
-        if (vision.getAverageDetection() != null) {
-            AprilTagPoseFtc avgPose = vision.getAverageDetection().ftcPose;
+        telemetry.addData("Averaging",averaging);
+        telemetry.addData("UsingFreshDetections",vision.IsUsingFreshDetections());
+        if (vision.GetAverageDetection() != null) {
+            AprilTagPoseFtc avgPose = vision.GetAverageDetection().ftcPose;
             telemetry.addData("Average Tag", String.format("x: %.2f y: %.2f z: %.2f", avgPose.x, avgPose.y, avgPose.z) );
         }
         telemetry.update();
@@ -47,5 +51,11 @@ public class visionTest extends OpMode {
             vision.StartAvg(583);
         }
         averaging = !averaging;
+    }
+    private void toggleUFD() {
+        if (vision.IsUsingFreshDetections())
+            vision.UsingFreshDetections(false);
+        else
+            vision.UsingFreshDetections(true);
     }
 }

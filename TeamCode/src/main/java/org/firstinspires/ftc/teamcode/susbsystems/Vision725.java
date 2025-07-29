@@ -13,6 +13,8 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -36,9 +38,11 @@ public class Vision725 {
     private int avgPasses;
     private int targetId = -1;
     private AprilTagDetection avgDetection;
+    private boolean usingFreshDetections = true;
     public Vision725(HardwareMap hm) {
         webcam = hm.get(WebcamName.class, "Webcam 1");
         processor = new AprilTagProcessor.Builder()
+                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0,0,90,0))
                 .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
                 .setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
                 //.setLensIntrinsics(907.659, 907.659, 659.985, 357.874) // For Global Shutter Camera
@@ -54,18 +58,22 @@ public class Vision725 {
         detections = processor.getDetections();
         freshDetections = processor.getFreshDetections();
         if (SORT_BY_X) {
-            sortByX(detections);
-            sortByX(freshDetections);
+            SortByX(detections);
+            SortByX(freshDetections);
         }
-        if (freshDetections != null) {
-            for (AprilTagDetection detection : freshDetections) {
+        ArrayList<AprilTagDetection> getAvgDetections = detections;
+        if (usingFreshDetections) getAvgDetections = freshDetections;
+        if (getAvgDetections != null && gettingAvg) {
+            for (AprilTagDetection detection : getAvgDetections) {
 
-                if (gettingAvg && detection.id == targetId) {
+                if (detection.id == targetId) {
                     detectionsForAvg.add(detection);
                 }
             }
         }
     }
+    public void UsingFreshDetections(boolean bool) {usingFreshDetections=bool;} // Fresh Detections are as implied new detections which are used to prevent re-using the same detection data
+    public boolean IsUsingFreshDetections() {return usingFreshDetections;}
     public void StartAvg(int id) {
         detectionsForAvg = new ArrayList<AprilTagDetection>();
         avgDetection = null;
@@ -73,13 +81,16 @@ public class Vision725 {
         gettingAvg = true;
     }
     public void StopAvg() {
-        if (avgDetection == null) avgDetection = detectionsForAvg.get(0);
+        if (detectionsForAvg == null) return;
+        if (avgDetection == null && !detectionsForAvg.isEmpty()) avgDetection = detectionsForAvg.get(0);
         for (AprilTagDetection detection : detectionsForAvg) {
             avgDetection = averageDetection(avgDetection, detection);
-        }
+        } //TODO: Rewrite Averaging to Average a Set of Data instead of Averaging 2 at a Time Resulting in Biased Output
         targetId = -1; gettingAvg = false;
     }
-    public AprilTagDetection getAverageDetection() {
+    public void CloseVP() {portal.close();}
+    public int GetTargetID() {return targetId;}
+    public AprilTagDetection GetAverageDetection() {
         return avgDetection;
     }
     public ArrayList<AprilTagDetection> GetDetections() { return detections; }
@@ -105,7 +116,7 @@ public class Vision725 {
         );
         return output;
     }
-    public void sortByX(ArrayList<AprilTagDetection> detections) {
+    public void SortByX(ArrayList<AprilTagDetection> detections) {
         Collections.sort(detections, new Comparator<AprilTagDetection>() {
             public int compare(AprilTagDetection c1, AprilTagDetection c2) {
                 if (c1.ftcPose.x > c2.ftcPose.x) return -1;
