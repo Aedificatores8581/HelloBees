@@ -17,6 +17,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.opencv.core.Point;
 
@@ -42,10 +43,17 @@ public class Vision725 {
     public Vision725(HardwareMap hm) {
         webcam = hm.get(WebcamName.class, "Webcam 1");
         processor = new AprilTagProcessor.Builder()
-                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0,0,90,0))
+                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0,0,0,0))
                 .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
                 .setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
                 //.setLensIntrinsics(907.659, 907.659, 659.985, 357.874) // For Global Shutter Camera
+                .setTagFamily(AprilTagProcessor.TagFamily.TAG_25h9)
+                .setTagLibrary(
+                        new AprilTagLibrary.Builder()
+                                .addTag(0,"beeHiveTag",1.93,DistanceUnit.INCH)
+                                .addTag(1,"beeHiveTag",1.93,DistanceUnit.INCH)
+                                .build()
+                )
                 .build();
         // For Intrinsics refer to TeamCode/src/main/res/xml/teamwebcamcalibrations.xml
         portal = new VisionPortal.Builder()
@@ -88,6 +96,7 @@ public class Vision725 {
         } //TODO: Rewrite Averaging to Average a Set of Data instead of Averaging 2 at a Time Resulting in Biased Output
         targetId = -1; gettingAvg = false;
     }
+    public int DetectionsForAvgCount() {if (detectionsForAvg != null)return detectionsForAvg.size(); else return -1;}
     public void CloseVP() {portal.close();}
     public int GetTargetID() {return targetId;}
     public AprilTagDetection GetAverageDetection() {

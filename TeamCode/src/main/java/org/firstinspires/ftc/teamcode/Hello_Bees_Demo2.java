@@ -137,10 +137,9 @@ public class Hello_Bees_Demo2 extends OpMode {
     int actionState = 0;
     boolean movingForward;
     ElapsedTime actionElapsedTime = new ElapsedTime(); // A timer to check if the robot has waited the set amount of time
-    public static double moveForwardTime = 1.5; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
-    public static double scanForTagsTime = 3; // How long (in seconds) the robot stops for to look for an april tag
+    public static double moveForwardTime = .5; // How long (in seconds) the robot moves forward for before stopping and looking for an april tag
+    public static double scanForTagsTime = 1.52; // How long (in seconds) the robot stops for to look for an april tag
     public static double pumpTime = 5, fogTime = 3.5, fanTime = 2.5;
-    double actionPauseTime = 0; // Variable for how long the robot is currently waiting for to switch to the next task
     boolean armOut = false;
 
     int fogCycleCount = 0;
@@ -275,7 +274,8 @@ public class Hello_Bees_Demo2 extends OpMode {
     private void telemetry (){
         if(arm_to_AprilTag) automationTelemetryTest();
         telemetry.addData("# AprilTags Detected", vision.GetDetections().size());
-        telemetry.addLine("target tag id: " + vision.GetTargetID());
+        if (cameraRelCoords == null) telemetry.addLine(String.format("target tag id: %d", vision.GetTargetID()));
+        else telemetry.addLine(String.format("target tag id: %d relCor: x: %.2f y: %.2f z: %.2f", vision.GetTargetID(),cameraRelCoords.x,cameraRelCoords.y,cameraRelCoords.z));
         telemetry.addLine(String.format("Auto: State %d Enabled %b Stowed %b Homed %b",automationState, armAutomation, armStowed, turretHomed));
         telemetry.addLine(String.format("Link: Pos %d Front %b Rear %b Busy %b",(int) linkageMotorPosition,frontLinkageLimit, rearLinkageLimit, linkage.isBusy()));
         telemetry.addLine(String.format("Fogger(False on): Fan %b Fog %b Pump (%.2f)", foggerRelay, fanRelay, pumpMotorPower));
@@ -371,7 +371,7 @@ public class Hello_Bees_Demo2 extends OpMode {
             shoulder_controller.setPID(Constants.ARM_P, Constants.ARM_I, Constants.ARM_D);
             shoulderMotorPower = -shoulder_controller.calculate(armPos,shoulder_target);
         }
-        shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.2),.2); //movement safety
+        shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.19),.19); //movement safety
         if(armPos <.35){
             shoulderMotorPower = Math.min(Math.max(shoulderMotorPower, -.2),0); //movement safety
         }
@@ -570,7 +570,6 @@ public class Hello_Bees_Demo2 extends OpMode {
                     SetAState(2);
                 break;
             case (2):
-                actionPauseTime = scanForTagsTime;
                 leftdriveMotorPower = 0;
                 rightdriveMotorPower = 0;
                 SetAState(3);
@@ -594,20 +593,24 @@ public class Hello_Bees_Demo2 extends OpMode {
             case (5):
                 failedAverages = 0;
                 cameraRelCoords = vision.GetAverageDetection().robotPose.getPosition();
-                cameraRelCoords = new Position(cameraRelCoords.unit, cameraRelCoords.x, cameraRelCoords.z, cameraRelCoords.y, cameraRelCoords.acquisitionTime);
+                cameraRelCoords = new Position(cameraRelCoords.unit, -cameraRelCoords.x, cameraRelCoords.y, -cameraRelCoords.z, cameraRelCoords.acquisitionTime);
+                if (Math.abs(cameraRelCoords.x)>5){SetAState(0);break;}
+
+                //Constants.YAW_CAM = Math.PI/2 - Math.toRadians(vision.GetAverageDetection().robotPose.getOrientation().getYaw());
 
                 robotRelCoords = getRobotRelativeCoordinate(cameraRelCoords);
                 double[] target_values = getGeometricTargets(robotRelCoords.x, robotRelCoords.y, robotRelCoords.z);
                 double turret_target_angle = -toDegrees(target_values[0]);
                 if (turret_target_angle < 0) turret_target_angle += 180;
                 else turret_target_angle -= 180;
+                turret_target_angle += Math.toRadians(vision.GetAverageDetection().robotPose.getOrientation().getYaw());
                 turret_target = (int)(turret_target_angle * (6000d/90d));
 
                 automationState = 2;
                 armAutomation = true;
                 linkage_target = -145;
                 shoulder_movement_target = 1.75;
-                wrist_target = .65;
+                wrist_target = .685;
                 SetAState(6);
                 break;
             case (6):

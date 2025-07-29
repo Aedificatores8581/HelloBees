@@ -24,10 +24,13 @@ import org.firstinspires.ftc.teamcode.util.Util;
 
 public class Turret725 {
     
-    public static final double PID_P_DEFAULT = 0.001;
-    public static final double PID_I_DEFAULT = 0;
-    public static final double PID_D_DEFAULT = 0.00003;
-    private double pCoef = PID_P_DEFAULT, iCoef = PID_I_DEFAULT, dCoef = PID_D_DEFAULT;
+    public static final double L_PID_P_DEFAULT = 0.001;
+    public static final double L_PID_I_DEFAULT = 0;
+    public static final double L_PID_D_DEFAULT = 0.00003;
+    private double pCoef = L_PID_P_DEFAULT, iCoef = L_PID_I_DEFAULT, dCoef = L_PID_D_DEFAULT;
+    public static final double S_PID_P_DEFAULT = 0.0015;
+    public static final double S_PID_I_DEFAULT = 0;
+    public static final double S_PID_D_DEFAULT = 0.000045;
     //changed this variable from TICKS_TO_DEG to DEG_TO_TICKS for accuracy
     private final double DEG_TO_TICKS = 5900d/90d;
 
@@ -116,6 +119,12 @@ public class Turret725 {
         if (atHome) homed = true;
         if (isHoming && homed) {Stop(); ResetEncoder(); }
 
+        if (InError()) {
+            if(AUTOSTOP) isBusy = false;
+            SetPIDCoef(S_PID_P_DEFAULT,S_PID_I_DEFAULT,S_PID_D_DEFAULT);
+        }
+        else { SetPIDCoef(L_PID_P_DEFAULT,L_PID_I_DEFAULT,L_PID_D_DEFAULT); }
+
         if (isBusy) {
             if (isHoming && !homed) {
                     rawSet(homePower);
@@ -125,10 +134,8 @@ public class Turret725 {
                 rawSet(controller.calculate(motor.getCurrentPosition(), targetPosition));
             }
         }
-
-
-        if (InError() && AUTOSTOP) isBusy = false;
     }
+    public void SetPIDCoef(double p,double i,double d) {pCoef = p; iCoef = i; dCoef = d;}
     public double GetPower() {return motor.getPower();}
     public boolean Homed() {return homed;}
 }
