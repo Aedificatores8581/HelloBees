@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
@@ -35,7 +36,8 @@ public class Turret725 {
     private final double DEG_TO_TICKS = 5900d/90d;
 
     private DcMotorEx motor;
-    private DigitalChannel homeLimitSwitch;
+
+    private AnalogInput turrentPot;
     private boolean isBusy = false;
     private boolean atHome, homed = false, isHoming = false;
     private double homePower = 0.3;
@@ -58,7 +60,7 @@ public class Turret725 {
     }
     private void init(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "turret");
-        homeLimitSwitch = hm.get(DigitalChannel.class, "turret_home");
+        turrentPot = hm.get(AnalogInput.class, "pot1");
         controller = new PIDController(pCoef, iCoef, dCoef);
     }
     public void setPID(double P, double I, double D){
@@ -93,7 +95,7 @@ public class Turret725 {
     public void GetTargetPosition(double targetAngle){/*Put something here*/}
 
     public double GetPos() {return GetRawPos() / DEG_TO_TICKS;}
-    public double GetRawPos() {return motor.getCurrentPosition();}
+    public double GetRawPos() {return turrentPot.getVoltage();}
     public double GetTargetPos() {return targetPosition / DEG_TO_TICKS;}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.TURRET_ERROR/2;}
@@ -110,14 +112,9 @@ public class Turret725 {
         isBusy = false;
         isHoming = false;
     }
-    public void ResetEncoder() {
-        motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-    }
     public void Update() {
-        atHome = !homeLimitSwitch.getState();
-        if (atHome) homed = true;
-        if (isHoming && homed) {Stop(); ResetEncoder(); }
+        if (turrentPot.getVoltage()<= .185) homed = true;
+        if (isHoming && homed) {Stop();}
 
         if (InError()) {
             if(AUTOSTOP) isBusy = false;

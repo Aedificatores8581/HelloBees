@@ -77,6 +77,7 @@ public class Hello_Bees_Teleop extends OpMode
     private DigitalChannel rear_limit;
     private CRServo shoulder;
     private AnalogInput pot1;
+    private AnalogInput pot2;
     
     boolean AutoBlock;
     boolean PumpButtonBlock;
@@ -90,6 +91,7 @@ public class Hello_Bees_Teleop extends OpMode
     boolean ButtonX1block = false;
     boolean ButtonY1block = false;
     double armPos = 0;
+    double turret_pot2 = 0;
     double shoulder_angle = 0;
     double linkageMotorPower = 0;
     double wristServoPosition = 0;
@@ -191,6 +193,7 @@ public class Hello_Bees_Teleop extends OpMode
         rear_limit = hardwareMap.get(DigitalChannel.class, "rear_limit");
         shoulder = hardwareMap.get(CRServo.class, "shoulder");
         pot1 = hardwareMap.get(AnalogInput.class, "pot1");
+        pot2 = hardwareMap.get(AnalogInput.class, "pot2");
 
         rightdrive.setDirection(CRServo.Direction.REVERSE);
         leftdrive.setDirection(CRServo.Direction.REVERSE);
@@ -308,6 +311,7 @@ public class Hello_Bees_Teleop extends OpMode
     private void sensorRead () {
         //shoulder position
         armPos = pot1.getVoltage();
+        turret_pot2 = pot2.getVoltage();
         //shoulder_angle = (270*armPos +445.5 - Math.sqrt((((270 * armPos) + 445.5) * ((270 * armPos) + 445.5)) + ((4 * armPos) * ((36450 * armPos) + 120135))))/(2*armPos);
         shoulder_angle = armPos * 81.8;
         foggerRelay = compressor1.getState();
