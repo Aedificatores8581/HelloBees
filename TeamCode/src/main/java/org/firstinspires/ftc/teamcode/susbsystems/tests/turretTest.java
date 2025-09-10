@@ -33,7 +33,10 @@ public class turretTest extends LinearOpMode {
             dpadDown.update(gamepad1.dpad_down);
 
             if (!Turret725.IsBusy()) Turret725.SetPower(gamepad1.right_stick_x);
-            else if (Math.abs(gamepad1.right_stick_x) > 0) Turret725.SetPower(gamepad1.right_stick_x);
+            else if (Math.abs(gamepad1.right_stick_x) > 0) {
+                Turret725.Stop();
+                Turret725.SetPower(gamepad1.right_stick_x);
+            }
             Turret725.Update();
             telemetry.addLine("  Controls Guide:");
             telemetry.addLine("A: Go to Target");
@@ -43,6 +46,7 @@ public class turretTest extends LinearOpMode {
             telemetry.addLine("  Telemetry Info:");
             telemetry.addData("Motor Power",  Turret725.GetPower());
             telemetry.addData("In Error", Turret725.InError());
+            telemetry.addData("Homed", Turret725.Homed());
             telemetry.addData("Is Busy", Turret725.IsBusy());
             telemetry.addData("Target Pos", targetPos);
             telemetry.addData("Current Pos", "Deg: "+Turret725.GetPos()+" Raw: "+Turret725.GetRawPos());

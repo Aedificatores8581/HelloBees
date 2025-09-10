@@ -24,43 +24,50 @@ import org.firstinspires.ftc.teamcode.util.Util;
 
 
 public class Turret725 {
-    
-    public static final double L_PID_P_DEFAULT = 0.001;
-    public static final double L_PID_I_DEFAULT = 0;
-    public static final double L_PID_D_DEFAULT = 0.00003;
-    private double pCoef = L_PID_P_DEFAULT, iCoef = L_PID_I_DEFAULT, dCoef = L_PID_D_DEFAULT;
+
+    //Turret Constants
+    //pid for movement
+    public static final double TURRET_PID_P_DEFAULT = 0.001;
+    public static final double TURRET_PID_I_DEFAULT = 0;
+    public static final double TURRET_PID_D_DEFAULT = 0.00003;
+    private double pCoef = TURRET_PID_P_DEFAULT, iCoef = TURRET_PID_I_DEFAULT, dCoef = TURRET_PID_D_DEFAULT;
+    //2nd pid values for movement if needed
     public static final double S_PID_P_DEFAULT = 0.0015;
     public static final double S_PID_I_DEFAULT = 0;
     public static final double S_PID_D_DEFAULT = 0.000045;
+    // turret min/max  analog potentiometer values
+    private static final double TURRET_MIN_POSITION = .185;
+    private static final double TURRET_MAX_POSITION = .315;
+
+    private static final double TURRET_ERROR = .001;
     //changed this variable from TICKS_TO_DEG to DEG_TO_TICKS for accuracy
-    private final double DEG_TO_TICKS = 5900d/90d;
+    private final double TURRET_POT_TO_DEG = 0.000483271;
 
     private DcMotorEx motor;
 
-    private AnalogInput turrentPot;
+    private AnalogInput turretPot;
     private boolean isBusy = false;
     private boolean atHome, homed = false, isHoming = false;
-    private double homePower = 0.3;
+    private double homePower = 0.2;
     private ElapsedTime homeTime = new ElapsedTime();
-    private double targetPosition;
-
+    private double targetPosition = TURRET_MAX_POSITION;
+    private double currentPosition;
+    private double currentPower = 0;
+    private double currentDegree;
     //represents the direction the turret has last been set to
     public Vector2 latestDirection = new Vector2();
 
     private PIDController controller;
 
     public boolean AUTOSTOP = true;
-    
-    public Turret725(HardwareMap hm) {
+
+    public Turret725(HardwareMap hm){
         init(hm);
-    }
-    public Turret725(HardwareMap hm, double P, double I, double D){
-        init(hm);
-        setPID(P,I,D);
+        setPID(pCoef, iCoef, dCoef);
     }
     private void init(HardwareMap hm) {
         motor = hm.get(DcMotorEx.class, "turret");
-        turrentPot = hm.get(AnalogInput.class, "pot1");
+        turretPot = hm.get(AnalogInput.class, "pot1");
         controller = new PIDController(pCoef, iCoef, dCoef);
     }
     public void setPID(double P, double I, double D){
@@ -78,7 +85,14 @@ public class Turret725 {
     }
 
     public void GoTo(double targetAngle) {
-        this.targetPosition = targetAngle*DEG_TO_TICKS;
+        targetPosition = targetAngle * TURRET_POT_TO_DEG;
+        //safety lock out
+        if (targetPosition <= TURRET_MIN_POSITION) {
+            targetPosition = TURRET_MIN_POSITION;
+        }
+        if (currentPosition >= TURRET_MAX_POSITION) {
+            targetPosition = TURRET_MAX_POSITION;
+        }
         isBusy = true;
     }
     public Vector2 getUnitVectorTarget(Vector3 targetVector){
@@ -94,18 +108,18 @@ public class Turret725 {
     public double GetTargetAngleDeg(Vector3 targetVector){ return Math.toDegrees(GetTargetAngleRad(targetVector));}
     public void GetTargetPosition(double targetAngle){/*Put something here*/}
 
-    public double GetPos() {return GetRawPos() / DEG_TO_TICKS;}
-    public double GetRawPos() {return turrentPot.getVoltage();}
-    public double GetTargetPos() {return targetPosition / DEG_TO_TICKS;}
+    public double GetPos() {return (currentPosition / TURRET_POT_TO_DEG);}
+    public double GetRawPos() {return turretPot.getVoltage();}
+    public double GetTargetPos() {return (targetPosition / TURRET_POT_TO_DEG);}
     public double GetRawTargetPos() {return targetPosition;}
-    public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.TURRET_ERROR/2;}
+    public boolean InError() { return Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR;}
     public boolean IsBusy() {return isBusy;}
     private void rawSet(double power) {
         motor.setPower(Util.IntClamp(power));
     }
     public void SetPower(double power) {
         isBusy = false;
-        rawSet(power);
+        currentPower = power;
     }
     public void Stop() {
         rawSet(0);
@@ -113,24 +127,36 @@ public class Turret725 {
         isHoming = false;
     }
     public void Update() {
-        if (turrentPot.getVoltage()<= .185) homed = true;
+        currentPosition = GetRawPos();
+
+        if (currentPosition >= TURRET_MAX_POSITION) homed = true;
         if (isHoming && homed) {Stop();}
 
-        if (InError()) {
-            if(AUTOSTOP) isBusy = false;
-            SetPIDCoef(S_PID_P_DEFAULT,S_PID_I_DEFAULT,S_PID_D_DEFAULT);
-        }
-        else { SetPIDCoef(L_PID_P_DEFAULT,L_PID_I_DEFAULT,L_PID_D_DEFAULT); }
+        if(isBusy && ((Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR))){Stop();};
+
+        //if (InError()) {
+           // if(AUTOSTOP) isBusy = false;
+           // SetPIDCoef(S_PID_P_DEFAULT,S_PID_I_DEFAULT,S_PID_D_DEFAULT);
+       // }
+        //else { SetPIDCoef(TURRET_PID_P_DEFAULT,TURRET_PID_I_DEFAULT,TURRET_PID_D_DEFAULT); }
 
         if (isBusy) {
             if (isHoming && !homed) {
-                    rawSet(homePower);
-                    if (homeTime.seconds() > 3) StartHome();
+                    currentPower = homePower;
+                    //if (homeTime.seconds() > 3) StartHome();
             } else {
                 controller.setPID(pCoef, iCoef, dCoef);
-                rawSet(controller.calculate(motor.getCurrentPosition(), targetPosition));
+                currentPower = controller.calculate(GetRawPos(), targetPosition);
             }
         }
+        //safety lockouts
+        if (currentPosition <= TURRET_MIN_POSITION) {
+            currentPower = Math.min(Math.max(currentPower, -1), 0);
+        }
+        if (currentPosition >= TURRET_MAX_POSITION) {
+            currentPower = Math.min(Math.max(currentPower, 0), 1);
+        }
+        rawSet(currentPower);
     }
     public void SetPIDCoef(double p,double i,double d) {pCoef = p; iCoef = i; dCoef = d;}
     public double GetPower() {return motor.getPower();}
