@@ -22,34 +22,34 @@ public class Arm725 {
     public static final double PID_I_DEFAULT = 0;
     public static final double PID_D_DEFAULT = .1;
   
-    private final double DEG_TO_TICKS = 0.0122222; // copied from teleop, needs re-measured
-    private final double PIVOT_HEIGHT = 0;
-    private final double PIVOT_TO_WRIST = 0;
-    private final double STOWED_ANGLE_DEG = -90;
+    private static final double DEG_TO_TICKS = 0.0122222; // copied from teleop, needs re-measured
+
+    private static final double HOME_ANGLE = 0;
+    private static final double HOME_Height = 0;
 
     // the value in volts the potentiometer reads at stowed position
     private final double POT_STOWED_READING = 0.495;
     // the value in volts the potentiometer reads when the arm points straight ahead
     private final double POT_0DEG_READING = 1.32;
-    private final double DEG_TO_VOLT = (POT_STOWED_READING - POT_0DEG_READING) / STOWED_ANGLE_DEG;
-    private final double RAD_TO_VOLT = Math.toRadians(DEG_TO_VOLT);
+    //private final double DEG_TO_VOLT = (POT_STOWED_READING - POT_0DEG_READING) / STOWED_ANGLE_DEG;
 
-    private Vector2 latestDirection = new Vector2();
+    private static final double PIVOT_TO_WRIST = 14;
+
+    //private Vector2 latestDirection = new Vector2();
   
     private DcMotorEx motor;
 
-    private AnalogInput pot1;
-  
     private boolean isBusy = false;
     private boolean atHome, homed = false, isHoming = false;
     //value copied from Turret class
     private double homePower = 0.3;
     private ElapsedTime homeTime = new ElapsedTime();
     private double targetPosition;
+    private double currentPosition;
+    private double currentPower = 0;
     private double pCoef = PID_P_DEFAULT, iCoef = PID_I_DEFAULT, dCoef = PID_D_DEFAULT;
     //desired distance offset from the given target in inches
     //this variable can be used to set the extension distance after setting the arm's rotation
-    private double offset;
 
     private PIDController controller;
 
@@ -63,54 +63,55 @@ public class Arm725 {
         setPID(P,I,D);
     }
     private void init(HardwareMap hm) {
-        motor = hm.get(DcMotorEx.class, "arm");
+        motor = hm.get(DcMotorEx.class, "shouldergobilda");
         controller = new PIDController(pCoef, iCoef, dCoef);
-        pot1 = hm.get(AnalogInput.class, "pot1");
+        //pot1 = hm.get(AnalogInput.class, "pot1");
     }
     public void setPID(double P, double I, double D){
         pCoef = P; iCoef = I; dCoef = D;
     }
     public void StartHome() {
-        //copied from turret class
-        homePower = -homePower;
-
-        isBusy = true;
-        isHoming = true;
+        ResetEncoder();
+        homed = true;
         homeTime.reset();
     }
-    public void GoTo(Vector3 targetVector) {
-        GoTo(targetVector.z);
-    }
-    public void GoTo(double target_height) {
+    //public void GoTo(Vector3 targetVector) {GoTo(targetVector.z);}
+    public void GoToHeight(double target_height) {
         
         this.targetPosition = Math.toDegrees(Math.asin(target_height/PIVOT_TO_WRIST)*DEG_TO_TICKS);
         isBusy = true;
     }
-    public Vector2 getVectorTarget(Vector3 targetVector){ // No function for GetTargetLength
-        latestDirection.setFromPolar(PIVOT_TO_WRIST, getTargetAngleRad(targetVector));
-        return latestDirection;
+    public void GoToAngle(double target_angle) {
+
+        this.targetPosition = Math.toDegrees(Math.asin(target_angle/PIVOT_TO_WRIST)*DEG_TO_TICKS);
+        isBusy = true;
     }
+    //public Vector2 getVectorTarget(Vector3 targetVector){ // No function for GetTargetLength
+    //    latestDirection.setFromPolar(PIVOT_TO_WRIST, getTargetAngleRad(targetVector));
+    //    return latestDirection;
+    //}
     public double getTargetAngleRad(Vector3 targetVector){
         return Util.clamp(Math.PI/-2, Math.atan2(targetVector.z,targetVector.toVector2().magnitude()),Math.PI/2);
     }
     public double getTargetAngleDeg(Vector3 targetVector){
         return Math.toDegrees(getTargetAngleRad(targetVector));
     }
-    public double GetPos() {return GetRawPos() / DEG_TO_VOLT + POT_0DEG_READING;}
-    public double GetRawPos() {return pot1.getVoltage();}
-    public double GetTargetPos() {return (targetPosition - POT_0DEG_READING) / DEG_TO_VOLT;}
+    public double GetPos() {return currentPosition / DEG_TO_TICKS;}
+    public double GetHeight() {return currentPosition;}
+    public double GetRawPos() {return currentPosition;}
+    public double GetTargetPos() {return (targetPosition) / DEG_TO_TICKS;}
     public double GetRawTargetPos() {return targetPosition;}
-    public boolean InError() { return Math.abs(GetRawPos() - GetRawTargetPos()) < Constants.ARM_ERROR/2;}
     public boolean IsBusy() {return isBusy;}
     private void rawSet(double power) {
         motor.setPower(Util.IntClamp(power));
     }
     public void SetPower(double power) {
         isBusy = false;
-        rawSet(power);
+        currentPower = power;
     }
     public void Stop() {
         rawSet(0);
+        currentPower = 0;
         isBusy = false;
         isHoming = false;
     }
@@ -119,25 +120,15 @@ public class Arm725 {
         motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
     public void Update() {
-        //limit switch code copied from turret. Needs to be adjusted for current setup
-        //
-        //atHome = !homeLimitSwitch.getState();
-        //if (atHome) homed = true;
-        //if (isHoming && homed) {Stop(); ResetEncoder(); }
 
+        currentPosition = motor.getCurrentPosition();
         if (isBusy) {
-            if (isHoming && !homed) {
-                    rawSet(homePower);
-                    if (homeTime.seconds() > 3) StartHome();
-            } else {
-                controller.setPID(pCoef, iCoef, dCoef);
-                rawSet(controller.calculate(GetPos(), targetPosition));
-            }
+           controller.setPID(pCoef, iCoef, dCoef);
+           currentPower = controller.calculate(GetPos(), targetPosition);
         }
-
-
-        if (InError() && AUTOSTOP) isBusy = false;
+        //add safety checks
+        rawSet(currentPower);
     }
-    public double GetPower() {return motor.getPower();}
+    public double GetPower() {return currentPower;}
     public boolean Homed() {return homed;}
 }
