@@ -8,10 +8,10 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.util.Util;
 
 //TODO 12/30/25 Nathan
-// figure out angle to encoder
-// init function to zero system
-// move to degrees functions maybe needs pid but probably defaults ftc move to position will work well enough
-
+// GotoHeight functions
+// GotoAngle functions
+// not precisely calibrated but seem good enough
+// homing is manual but works well.  Homed = horizontal
 
 public class Arm725 {
 

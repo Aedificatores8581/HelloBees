@@ -8,6 +8,10 @@ import org.firstinspires.ftc.teamcode.util.Util;
 
 public class Drive { // Working but Could be Missing Some Needed Functions
     /**
+     *      todo 12/31/25
+     *      add IMU
+     *      add automatic steering correction
+     *      add pitch, roll, yaw functions
      *      Usage Example:
      * Move Forward for One Second, Turn for One Second, and then Turn Back While Moving Forward for Two Seconds
      *
