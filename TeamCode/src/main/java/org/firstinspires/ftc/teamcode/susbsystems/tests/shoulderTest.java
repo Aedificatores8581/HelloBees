@@ -32,10 +32,10 @@ public class shoulderTest extends LinearOpMode{
 
         while (!shoulder.Homed() && !opModeIsActive() && !isStopRequested()) {
             runToHome.update(gamepad1.x);
-            if (!shoulder.IsBusy()) shoulder.SetPower(gamepad1.right_stick_y);
+            if (!shoulder.IsBusy()) shoulder.SetPower(-gamepad1.right_stick_y);
             else if (Math.abs(gamepad1.right_stick_y) > 0) {
                 shoulder.Stop();
-                shoulder.SetPower(gamepad1.right_stick_y);
+                shoulder.SetPower(-gamepad1.right_stick_y);
             }
             shoulder.Update();
         }
@@ -49,10 +49,10 @@ public class shoulderTest extends LinearOpMode{
             dpadUp.update(gamepad1.dpad_up);
             dpadDown.update(gamepad1.dpad_down);
 
-            if (!shoulder.IsBusy()) shoulder.SetPower(gamepad1.right_stick_y);
+            if (!shoulder.IsBusy()) shoulder.SetPower(-gamepad1.right_stick_y);
             else if (Math.abs(gamepad1.right_stick_y) > 0) {
                 shoulder.Stop();
-                shoulder.SetPower(gamepad1.right_stick_y);
+                shoulder.SetPower(-gamepad1.right_stick_y);
             }
             shoulder.Update();
             telemetry.addLine("  Controls Guide:");
@@ -68,7 +68,7 @@ public class shoulderTest extends LinearOpMode{
             telemetry.addData("Is Busy", shoulder.IsBusy());
             telemetry.addData("Target Pos", targetPos);
             telemetry.addData("Current Pos","Deg: "+shoulder.GetPos()+" Raw: "+shoulder.GetRawPos()+" Height: "+shoulder.GetHeight());
-            telemetry.addData("Active Target Pos", "Deg: "+shoulder.GetTargetPos()+" Raw: "+shoulder.GetRawTargetPos());
+            telemetry.addData("Active Target Pos", "Deg: "+shoulder.GetTargetPos()+" Raw: "+shoulder.GetRawTargetPos()+" T_Height: "+shoulder.GetTargetHeight());
             telemetry.update();
         }
     }

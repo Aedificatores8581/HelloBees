@@ -1,17 +1,10 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
-import com.arcrobotics.ftclib.controller.PIDController;
-import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.Constants;
-import org.firstinspires.ftc.teamcode.util.Math.Vector2;
-import org.firstinspires.ftc.teamcode.util.Math.Vector3;
 import org.firstinspires.ftc.teamcode.util.Util;
 
 //TODO 12/30/25 Nathan
@@ -48,9 +41,9 @@ public class Arm725 {
   */
     //Shoulder Constants
     private static final double DEG_TO_TICKS = 11.05;
-    private static final double SHOULDER_LENGTH = 19;
-    private static final double SHOULDER_MAX_HEIGHT = 10;
-    private static final double SHOULDER_MIN_HEIGHT = -10;
+    private static final double SHOULDER_RADIUS = 19;
+    private static final double SHOULDER_MAX_HEIGHT = 13;
+    private static final double SHOULDER_MIN_HEIGHT = -17;
 
     //Shoulder private variables
     private DcMotorEx motor;
@@ -59,6 +52,7 @@ public class Arm725 {
     private int targetPosition = 0;
     private double currentPosition;
     private double currentPower = 0;
+    private double targetHeight = 0;
 
     public Arm725(HardwareMap hm) {
         init(hm);
@@ -70,10 +64,15 @@ public class Arm725 {
     }
 
     public void GoToHeight(double target_height) {
-        
-        this.targetPosition = (int) Math.toDegrees(Math.asin(target_height)*DEG_TO_TICKS);
+        double temp;
+        targetHeight = target_height;
+        temp = target_height / SHOULDER_RADIUS;
+        //temp = Math.toRadians(temp);
+        temp = Math.asin(temp);
+        temp = Math.toDegrees(temp);
+        targetPosition = (int) (temp*DEG_TO_TICKS);
         shoulder_is_busy = true;
-        motor.setTargetPosition((int) targetPosition);
+        motor.setTargetPosition(targetPosition);
         motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         currentPower = 1;
     }
@@ -91,7 +90,7 @@ public class Arm725 {
         temp = currentPosition / DEG_TO_TICKS;
         temp = Math.toRadians(temp);
         temp = Math.sin(temp);
-        return (SHOULDER_LENGTH*temp);
+        return (SHOULDER_RADIUS *temp);
     }
     public double GetRawPos() {return currentPosition;}
     public double GetTargetPos() {return (targetPosition) / DEG_TO_TICKS;}
@@ -111,8 +110,10 @@ public class Arm725 {
         shoulder_is_busy = false;
     }
     public void ResetEncoder() {
+        currentPower = 0;
         motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        currentPosition = motor.getCurrentPosition();
     }
     public void Update() {
 
@@ -129,18 +130,19 @@ public class Arm725 {
                 if (shoulder_is_busy) {
                     Stop();
                 }
-                currentPower = Math.min(Math.max(currentPower, -1), 0);
+                currentPower = Math.min(Math.max(currentPower, 0), -1);
             }
-            if (GetHeight() > SHOULDER_MIN_HEIGHT) {
+            if (GetHeight() < SHOULDER_MIN_HEIGHT) {
                 if (shoulder_is_busy) {
                     Stop();
                 }
-                currentPower = Math.min(Math.max(currentPower, 0), -1);
+                currentPower = Math.min(Math.max(currentPower, 0), 1);
             }
         }
         rawSet(currentPower);
     }
     public double GetPower() {return currentPower;}
+    public double GetTargetHeight() {return targetHeight;}
     public boolean Homed() {return homed;}
     public void Home() {
         homed = true;
