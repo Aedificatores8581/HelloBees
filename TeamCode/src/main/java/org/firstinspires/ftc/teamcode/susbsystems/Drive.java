@@ -8,10 +8,12 @@ import org.firstinspires.ftc.teamcode.util.Util;
 
 public class Drive { // Working but Could be Missing Some Needed Functions
     /**
-     *      todo 12/31/25
+     *      todo 1/1/26
      *      add IMU
      *      add automatic steering correction
      *      add pitch, roll, yaw functions
+     *      add time based movement
+     *      add time based movement with steering correction
      *      Usage Example:
      * Move Forward for One Second, Turn for One Second, and then Turn Back While Moving Forward for Two Seconds
      *
@@ -38,6 +40,7 @@ public class Drive { // Working but Could be Missing Some Needed Functions
         double motorPower = MotorPower(power);
         leftMotor.setPower(motorPower); rightMotor.setPower(motorPower);
     }
+
     public void Set(double power, double steering) {
         // If Steering is -1 Pivot around Center Left, if Steering is 1 Pivot around Center Right
         // If Steering is -0.5 Steer Robot to left while moving forward, and vice versa for 0.5
