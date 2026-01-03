@@ -1,11 +1,12 @@
 package org.firstinspires.ftc.teamcode.susbsystems.tests;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.Turret725;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
-
+@Disabled
 @TeleOp (name = "Turret Test", group = "SubsysTest")
 public class turretTest extends LinearOpMode {
     Turret725 Turret725;

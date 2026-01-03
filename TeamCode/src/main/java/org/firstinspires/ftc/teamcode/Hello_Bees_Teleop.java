@@ -31,6 +31,7 @@ package org.firstinspires.ftc.teamcode;
 
 import static java.lang.Math.*;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -59,6 +60,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 
 @Config
+@Disabled
 @TeleOp(name="Hello Bees-Java", group="Iterative OpMode")
 public class Hello_Bees_Teleop extends OpMode
 {

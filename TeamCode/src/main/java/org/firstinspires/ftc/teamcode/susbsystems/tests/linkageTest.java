@@ -1,11 +1,13 @@
 package org.firstinspires.ftc.teamcode.susbsystems.tests;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.LinkageExtension725;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 
+@Disabled
 @TeleOp (name = "Extension Test", group = "SubsysTest")
 public class linkageTest extends OpMode {
     LinkageExtension725 extension;

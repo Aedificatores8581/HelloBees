@@ -79,6 +79,7 @@ public class robot_system {
         fogger.Update();
         extension.Update();
         if(cycling){cycle();}
+        if(arm_automation){armToPosition();}
         }
         public void robot_drive(double power, double steering) {
             robot_drive.Set(power, steering);
@@ -115,6 +116,7 @@ public class robot_system {
         cyclecount = 0;
     }
     private void init_cycle(){
+        cycling = true;
         pumpRunTime.reset();
         fogRunTime.reset();
         cyclecount = 0;
@@ -151,5 +153,24 @@ public class robot_system {
     //code used for the move arm to point in space
     //************************************
     //*************************************
+    public void startarmToPosition(Orientation target){
+        arm_automation = true;
+        init_armToPosition(target);
 
+    }
+    public void stopArmToPosition(){
+        arm_automation = false;
+
+    }
+    private void init_armToPosition(Orientation target){
+        arm_automation = true;
+        target_position = target;
+        robot_position.firstAngle = 0;
+        robot_position.secondAngle = 0;
+        robot_position.thirdAngle = 0;
+    }
+    private void armToPosition(){
+        //do stuff
+    }
+    public boolean isArm_automation(){return cycling;}
 }

@@ -20,6 +20,7 @@ import java.util.List;
 
 
 @TeleOp
+@Disabled
 public class AprilTagTest extends LinearOpMode {
 
 
