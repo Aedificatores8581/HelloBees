@@ -1,8 +1,13 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 public class robot_system {
+    // robot constants
+
     //robot subsystems
     Drive robot_drive;
     RelayDevice fan;
@@ -15,6 +20,36 @@ public class robot_system {
     public enum Subsystems{
         DRIVE,SHOULDER,TURRET,WRIST,PUMP,FAN,FOGGER,EXTENSION
     }
+
+
+    //fog cycle
+    //****************************************************************************************************************************
+    //****************************************************************************************************************************
+    //fog Cycle Constants
+    private static final double PUMP_TIME = 5;
+    private static final double FOG_TIME = 2;
+    private static final double FAN_TIME = .5;
+
+    //fog cycle variables
+    //********************
+    private ElapsedTime fogRunTime = new ElapsedTime();
+    private ElapsedTime fanRunTime = new ElapsedTime();
+    private ElapsedTime pumpRunTime = new ElapsedTime();
+    boolean cycling = false;
+    int cyclecount = 0;
+
+    //armToOrientation
+    //*************************************************************************************************************************
+    //*************************************************************************************************************************
+    //armToOrientation Constants
+
+
+    //armToOrientation variables
+    private Orientation target_position;
+    private Orientation current_position;
+    private Orientation robot_position;
+    private boolean arm_automation = false;
+
     //buttons
 
     //local variables
@@ -43,6 +78,7 @@ public class robot_system {
         fan.Update();
         fogger.Update();
         extension.Update();
+        if(cycling){cycle();}
         }
         public void robot_drive(double power, double steering) {
             robot_drive.Set(power, steering);
@@ -64,4 +100,56 @@ public class robot_system {
     public void runForTicks(int ticks){
             runForTicks = ticks;
         }
+
+    //code used for the automated fog cycle
+    //************************************
+    //*************************************
+    public void startFogCycle(){
+        cycling = true;
+        init_cycle();
+    }
+    public void stopFogCycle(){
+        cycling = false;
+        pump.TurnOff();
+        fan.TurnOff();
+        cyclecount = 0;
+    }
+    private void init_cycle(){
+        pumpRunTime.reset();
+        fogRunTime.reset();
+        cyclecount = 0;
+        pump.TurnOn();
+        fogger.TurnOn();
+    }
+    private void cycle(){
+        if (pumpRunTime.seconds()>PUMP_TIME){pump.TurnOff();}
+        if (cyclecount ==0 && fogRunTime.seconds() >FOG_TIME){
+            fanRunTime.reset();
+            fan.TurnOn();
+            cyclecount++;
+        }
+        if (fanRunTime.seconds()> FAN_TIME){
+            fan.ToggleState();
+            fanRunTime.reset();
+        }
+        if (cyclecount > 0){
+            if(fogRunTime.seconds()>FOG_TIME){
+                fogger.ToggleState();
+                fogRunTime.reset();
+                cyclecount++;
+            }
+        }
+        if (cyclecount >16){
+            pump.TurnOff();
+            fan.TurnOff();
+            cycling = false;
+        }
+    }
+    public int getCyclecount(){return cyclecount;}
+    public boolean isCycling(){return cycling;}
+
+    //code used for the move arm to point in space
+    //************************************
+    //*************************************
+
 }
