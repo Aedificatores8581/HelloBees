@@ -92,6 +92,13 @@ public class Arm725 {
         temp = Math.sin(temp);
         return (SHOULDER_RADIUS *temp);
     }
+    public double getExtension(){
+        double temp;
+        temp = currentPosition / DEG_TO_TICKS;
+        temp = Math.toRadians(temp);
+        temp = Math.cos(temp);
+        return (SHOULDER_RADIUS *temp);
+    }
     public double GetRawPos() {return currentPosition;}
     public double GetTargetPos() {return (targetPosition) / DEG_TO_TICKS;}
     public double GetRawTargetPos() {return targetPosition;}

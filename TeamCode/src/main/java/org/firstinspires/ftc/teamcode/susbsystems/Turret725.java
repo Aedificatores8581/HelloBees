@@ -8,10 +8,15 @@ import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.Constants;
 import org.firstinspires.ftc.teamcode.util.Math.Vector2;
 import org.firstinspires.ftc.teamcode.util.Math.Vector3;
 import org.firstinspires.ftc.teamcode.util.Util;
+
+import java.util.ArrayList;
+import java.util.List;
 
 //TODO 7/14/25 - Frank
 // - confirm default 0 degree position and rotation direction
@@ -26,6 +31,23 @@ import org.firstinspires.ftc.teamcode.util.Util;
 public class Turret725 {
 
     //Turret Constants
+    /*
+    * Possible Turret Positions
+    * .315 0 degrees
+    * .279 45
+    * .255 90
+    * .241 135
+    * .216 180
+    * .195 225
+    *
+    * */
+    //POTS Constants
+    private static final double ZERO_DEGREES = .315;
+    private static final double FORTYFIVE_DEGREES = .279;
+    private static final double NINETY_DEGREES = .255;
+    private static final double ONETHIRTYFIVE_DEGREES = .241;
+    private static final double ONEEIGHTY_DEGREES = .216;
+    private static final double TWOTWENTYFIVE_DEGREES = .195;
     //pid for movement
     public static final double TURRET_PID_P_DEFAULT = 0.001;
     public static final double TURRET_PID_I_DEFAULT = 0;
@@ -42,6 +64,7 @@ public class Turret725 {
     private static final double TURRET_ERROR = .001;
     //changed this variable from TICKS_TO_DEG to DEG_TO_TICKS for accuracy
     private final double TURRET_POT_TO_DEG = 0.000483271;
+    private final double TURRET_LENGTH = 11;
 
     private DcMotorEx motor;
 
@@ -53,13 +76,17 @@ public class Turret725 {
     private double targetPosition = TURRET_MAX_POSITION;
     private double currentPosition;
     private double currentPower = 0;
+    private double currentAngle = 0;
+    private double currentAngleRAD = 0;
     private double currentDegree;
     //represents the direction the turret has last been set to
-    public Vector2 latestDirection = new Vector2();
+    private ArrayList<Double> POTS_POSITIONS;
+    private ArrayList<Double> POTS_ANGLES;
 
     private PIDController controller;
 
     public boolean AUTOSTOP = true;
+    private Position currentxyzPosition;
 
     public Turret725(HardwareMap hm){
         init(hm);
@@ -69,6 +96,21 @@ public class Turret725 {
         motor = hm.get(DcMotorEx.class, "turret");
         turretPot = hm.get(AnalogInput.class, "pot1");
         controller = new PIDController(pCoef, iCoef, dCoef);
+        currentxyzPosition = new Position(DistanceUnit.INCH,0,0,0,System.nanoTime());
+        POTS_POSITIONS = new ArrayList<Double>();
+        POTS_POSITIONS.add(ZERO_DEGREES);
+        POTS_POSITIONS.add(FORTYFIVE_DEGREES);
+        POTS_POSITIONS.add(NINETY_DEGREES);
+        POTS_POSITIONS.add(ONETHIRTYFIVE_DEGREES);
+        POTS_POSITIONS.add(ONEEIGHTY_DEGREES);
+        POTS_POSITIONS.add(TWOTWENTYFIVE_DEGREES);
+        POTS_ANGLES = new ArrayList<Double>();
+        POTS_ANGLES.add(0.0);
+        POTS_ANGLES.add(45.0);
+        POTS_ANGLES.add(90.0);
+        POTS_ANGLES.add(135.0);
+        POTS_ANGLES.add(180.0);
+        POTS_ANGLES.add(225.0);
     }
     public void setPID(double P, double I, double D){
         pCoef = P; iCoef = I; dCoef = D;
@@ -80,12 +122,9 @@ public class Turret725 {
         isHoming = true;
         homeTime.reset();
     }
-    public void GoTo(Vector3 targetVector) {
-        GoTo(GetTargetAngleDeg(targetVector));
-    }
 
-    public void GoTo(double targetAngle) {
-        targetPosition = targetAngle * TURRET_POT_TO_DEG;
+    public void GoTo(double targetPOTS) {
+        targetPosition = targetPOTS;
         //safety lock out
         if (targetPosition <= TURRET_MIN_POSITION) {
             targetPosition = TURRET_MIN_POSITION;
@@ -95,20 +134,10 @@ public class Turret725 {
         }
         isBusy = true;
     }
-    public Vector2 getUnitVectorTarget(Vector3 targetVector){
-        latestDirection.setFromPolar(1, GetTargetAngleRad(targetVector));
-        return latestDirection;
-    }
-    //This function should go in the full system class
-    //public Vector3 getVectorTarget(Vector3 targetVector, double extensionLength){return getUnitVectorTarget(targetVector).toVector3(0).add(0,0,extensionHeight).scalar(extensionLength + retractedLength);}
 
-    public double GetTargetAngleRad(Vector3 targetVector){
-        return Math.atan2(targetVector.y,targetVector.x);
-    }
-    public double GetTargetAngleDeg(Vector3 targetVector){ return Math.toDegrees(GetTargetAngleRad(targetVector));}
     public void GetTargetPosition(double targetAngle){/*Put something here*/}
 
-    public double GetPos() {return (currentPosition / TURRET_POT_TO_DEG);}
+    public double GetPos() {return (currentAngle);}
     public double GetRawPos() {return turretPot.getVoltage();}
     public double GetTargetPos() {return (targetPosition / TURRET_POT_TO_DEG);}
     public double GetRawTargetPos() {return targetPosition;}
@@ -126,8 +155,23 @@ public class Turret725 {
         isBusy = false;
         isHoming = false;
     }
+    private void setAngle(){
+        double closestValue = POTS_POSITIONS.get(0);
+        double minDifference = Math.abs(currentPosition-closestValue);
+        for(double POTS : POTS_POSITIONS){
+            double currentDifference = Math.abs(currentPosition - POTS);
+            if (currentDifference < minDifference){
+                minDifference = currentDifference;
+                closestValue = POTS;
+            }
+        }
+        currentAngle = POTS_ANGLES.get(POTS_POSITIONS.indexOf(closestValue));
+        currentAngleRAD = Math.toRadians(currentAngle);
+    }
     public void Update() {
         currentPosition = GetRawPos();
+        setAngle();
+        this.currentxyzPosition = new Position(DistanceUnit.INCH,TURRET_LENGTH * Math.cos(currentAngleRAD),TURRET_LENGTH * Math.sin(currentAngleRAD),0,System.nanoTime());
 
         if (currentPosition >= TURRET_MAX_POSITION) homed = true;
         if (isHoming && homed) {Stop();}
@@ -161,4 +205,5 @@ public class Turret725 {
     public void SetPIDCoef(double p,double i,double d) {pCoef = p; iCoef = i; dCoef = d;}
     public double GetPower() {return motor.getPower();}
     public boolean Homed() {return homed;}
+    public Position getPosition(){return currentxyzPosition;}
 }

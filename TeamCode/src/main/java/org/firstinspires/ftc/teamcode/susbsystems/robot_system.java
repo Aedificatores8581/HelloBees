@@ -3,7 +3,12 @@ package org.firstinspires.ftc.teamcode.susbsystems;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 
 public class robot_system {
     // robot constants
@@ -42,14 +47,20 @@ public class robot_system {
     //*************************************************************************************************************************
     //*************************************************************************************************************************
     //armToOrientation Constants
-
+    private static final double DEFAULT_WRIST_ANGLE = 75;
+    private static final double Z_OFFSET = 12;
 
     //armToOrientation variables
-    private Orientation target_position;
-    private Orientation current_position;
-    private Orientation robot_position;
+    private Orientation target_angle;
+    private Position target_position;
+    private Orientation current_angle;
+    private Position arm_position;
+    private Orientation robot_orientation;
     private boolean arm_automation = false;
-
+    private int arm_state = 0;
+    private double arm_x = 0;
+    private double arm_y = 0;
+    private double arm_z = 0;
     //buttons
 
     //local variables
@@ -69,6 +80,9 @@ public class robot_system {
     }
     private void init() {
         extension.StartHome();
+        arm_position = new Position(DistanceUnit.INCH,0,0,0,System.nanoTime());
+        target_position = new Position(DistanceUnit.INCH,0,0,0,System.nanoTime());
+        robot_orientation = new Orientation(AxesReference.EXTRINSIC, AxesOrder.XYZ, AngleUnit.DEGREES,0,0,0,System.nanoTime());
     }
     public void update() {
         pump.update();
@@ -78,6 +92,7 @@ public class robot_system {
         fan.Update();
         fogger.Update();
         extension.Update();
+        updatearm();
         if(cycling){cycle();}
         if(arm_automation){armToPosition();}
         }
@@ -153,24 +168,53 @@ public class robot_system {
     //code used for the move arm to point in space
     //************************************
     //*************************************
-    public void startarmToPosition(Orientation target){
+
+    //update arm current position
+    private void updatearm(){
+        arm_position.z = shoulder.GetHeight() + wrist.GetHeight();
+        arm_position.y = turret.getPosition().y;
+        arm_position.x =-( extension.GetPos() + shoulder.getExtension());
+    }
+    public void startarmToPosition(Position target){
         arm_automation = true;
         init_armToPosition(target);
 
     }
     public void stopArmToPosition(){
         arm_automation = false;
-
+        arm_state = 0;
+        wrist.Stop();
+        turret.Stop();
+        shoulder.Stop();
+        turret.Stop();
+        extension.Stop();
     }
-    private void init_armToPosition(Orientation target){
+    private void init_armToPosition(Position target){
+        arm_state = 1;
         arm_automation = true;
         target_position = target;
-        robot_position.firstAngle = 0;
-        robot_position.secondAngle = 0;
-        robot_position.thirdAngle = 0;
+        wrist.GoToAngle(DEFAULT_WRIST_ANGLE);
+        turret.GoTo(.241);
     }
     private void armToPosition(){
-        //do stuff
+        if (arm_state == 1){
+            if(!turret.IsBusy()){
+                arm_state = 2;
+                extension.GoTo(Math.abs(target_position.x) - Math.abs(arm_x));
+            }
+        }
+        if(arm_state == 2 && !extension.IsBusy()){
+            arm_state = 3;
+            shoulder.GoToHeight(target_position.z);
+        }
+        if(arm_state == 3 && !shoulder.IsBusy()){
+            arm_automation = false;
+            arm_state = 0;
+        }
     }
-    public boolean isArm_automation(){return cycling;}
+    public boolean isArm_automation(){return arm_automation;}
+    public int armAutoState(){return arm_state;}
+    public Position getCurrent_Arm_Position(){
+        return arm_position;
+    }
 }

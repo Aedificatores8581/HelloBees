@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode.susbsystems.tests;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.susbsystems.robot_system;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 
@@ -12,7 +14,7 @@ public class RobotTest extends OpMode {
     robot_system robot;
     ButtonBlock stopArm,startArm, startFogCycle, stopFogCycle;
     robot_system.Subsystems subsystem;
-    Orientation armTarget;
+    Position armTarget;
 
     @Override
     public void init() {
@@ -25,6 +27,7 @@ public class RobotTest extends OpMode {
                 .onTrue(() -> {robot.startFogCycle();});
         stopFogCycle = new ButtonBlock()
                 .onTrue(() -> {robot.stopFogCycle();});
+        armTarget = new Position(DistanceUnit.INCH,-20,0,-10,System.nanoTime());
         telemetry.addLine("Initialized");
         telemetry.update();
 
@@ -58,7 +61,9 @@ public class RobotTest extends OpMode {
         telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
         telemetry.addData("Target Position: ", pump.GetTarget()+" Busy: "+pump.isBusy());*/
         telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
-        telemetry.addData("Arm Position: ", robot.isArm_automation()+"Target: "+robot.getCyclecount());
+        telemetry.addData("Arm Position: (X)", robot.getCurrent_Arm_Position().x+" (Y) "+robot.getCurrent_Arm_Position().y+" (Z) "+robot.getCurrent_Arm_Position().z);
+        telemetry.addData("Arm Target: (X)", armTarget.x+" (Y) "+armTarget.y+" (Z) "+armTarget.z);
+        telemetry.addData("Arm Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState());
         telemetry.update();
     }
 }

@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.Turret725;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
-@Disabled
+
 @TeleOp (name = "Turret Test", group = "SubsysTest")
 public class turretTest extends LinearOpMode {
     Turret725 Turret725;
@@ -50,8 +50,9 @@ public class turretTest extends LinearOpMode {
             telemetry.addData("Homed", Turret725.Homed());
             telemetry.addData("Is Busy", Turret725.IsBusy());
             telemetry.addData("Target Pos", targetPos);
-            telemetry.addData("Current Pos", "Deg: "+Turret725.GetPos()+" Raw: "+Turret725.GetRawPos());
+            telemetry.addData("Current Pos:", "(Deg) "+Turret725.GetPos()+" (Raw) "+Turret725.GetRawPos());
             telemetry.addData("Active Target Pos", "Deg: "+Turret725.GetTargetPos()+" Raw: "+Turret725.GetRawTargetPos());
+            telemetry.addData("Pos", "X: "+Turret725.getPosition().x+" Y: "+Turret725.getPosition().y+" Z:"+Turret725.getPosition().z);
             telemetry.update();
         }
     }
