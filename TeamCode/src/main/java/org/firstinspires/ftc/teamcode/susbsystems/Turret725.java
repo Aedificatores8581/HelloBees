@@ -42,12 +42,15 @@ public class Turret725 {
     *
     * */
     //POTS Constants
-    private static final double ZERO_DEGREES = .315;
+    /*private static final double ZERO_DEGREES = .315;
     private static final double FORTYFIVE_DEGREES = .279;
     private static final double NINETY_DEGREES = .255;
     private static final double ONETHIRTYFIVE_DEGREES = .241;
     private static final double ONEEIGHTY_DEGREES = .216;
     private static final double TWOTWENTYFIVE_DEGREES = .195;
+    // turret min/max  analog potentiometer values
+    private static final double TURRET_MIN_POSITION = .185;
+    private static final double TURRET_MAX_POSITION = .315;*/
     //pid for movement
     public static final double TURRET_PID_P_DEFAULT = 0.001;
     public static final double TURRET_PID_I_DEFAULT = 0;
@@ -57,14 +60,12 @@ public class Turret725 {
     public static final double S_PID_P_DEFAULT = 0.0015;
     public static final double S_PID_I_DEFAULT = 0;
     public static final double S_PID_D_DEFAULT = 0.000045;
-    // turret min/max  analog potentiometer values
-    private static final double TURRET_MIN_POSITION = .185;
-    private static final double TURRET_MAX_POSITION = .315;
+
 
     private static final double TURRET_ERROR = .001;
     //changed this variable from TICKS_TO_DEG to DEG_TO_TICKS for accuracy
-    private final double TURRET_POT_TO_DEG = 0.000483271;
-    private final double TURRET_LENGTH = 11;
+    //private final double TURRET_POT_TO_DEG = 0.000483271;
+    private final double TURRET_LENGTH = 9;
 
     private DcMotorEx motor;
 
@@ -73,7 +74,7 @@ public class Turret725 {
     private boolean atHome, homed = false, isHoming = false;
     private double homePower = 0.2;
     private ElapsedTime homeTime = new ElapsedTime();
-    private double targetPosition = TURRET_MAX_POSITION;
+    private double targetPosition = Constants.TURRET_MAX_POSITION;
     private double currentPosition;
     private double currentPower = 0;
     private double currentAngle = 0;
@@ -98,12 +99,12 @@ public class Turret725 {
         controller = new PIDController(pCoef, iCoef, dCoef);
         currentxyzPosition = new Position(DistanceUnit.INCH,0,0,0,System.nanoTime());
         POTS_POSITIONS = new ArrayList<Double>();
-        POTS_POSITIONS.add(ZERO_DEGREES);
-        POTS_POSITIONS.add(FORTYFIVE_DEGREES);
-        POTS_POSITIONS.add(NINETY_DEGREES);
-        POTS_POSITIONS.add(ONETHIRTYFIVE_DEGREES);
-        POTS_POSITIONS.add(ONEEIGHTY_DEGREES);
-        POTS_POSITIONS.add(TWOTWENTYFIVE_DEGREES);
+        POTS_POSITIONS.add(Constants.ZERO_DEGREES);
+        POTS_POSITIONS.add(Constants.FORTYFIVE_DEGREES);
+        POTS_POSITIONS.add(Constants.NINETY_DEGREES);
+        POTS_POSITIONS.add(Constants.ONETHIRTYFIVE_DEGREES);
+        POTS_POSITIONS.add(Constants.ONEEIGHTY_DEGREES);
+        POTS_POSITIONS.add(Constants.TWOTWENTYFIVE_DEGREES);
         POTS_ANGLES = new ArrayList<Double>();
         POTS_ANGLES.add(0.0);
         POTS_ANGLES.add(45.0);
@@ -126,11 +127,11 @@ public class Turret725 {
     public void GoTo(double targetPOTS) {
         targetPosition = targetPOTS;
         //safety lock out
-        if (targetPosition <= TURRET_MIN_POSITION) {
-            targetPosition = TURRET_MIN_POSITION;
+        if (targetPosition <= Constants.TURRET_MIN_POSITION) {
+            targetPosition = Constants.TURRET_MIN_POSITION;
         }
-        if (currentPosition >= TURRET_MAX_POSITION) {
-            targetPosition = TURRET_MAX_POSITION;
+        if (targetPosition >= Constants.TURRET_MAX_POSITION) {
+            targetPosition = Constants.TURRET_MAX_POSITION;
         }
         isBusy = true;
     }
@@ -139,7 +140,7 @@ public class Turret725 {
 
     public double GetPos() {return (currentAngle);}
     public double GetRawPos() {return turretPot.getVoltage();}
-    public double GetTargetPos() {return (targetPosition / TURRET_POT_TO_DEG);}
+    public double GetTargetPos() {return GetRawPos();}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR;}
     public boolean IsBusy() {return isBusy;}
@@ -154,6 +155,7 @@ public class Turret725 {
         rawSet(0);
         isBusy = false;
         isHoming = false;
+        currentPower = 0;
     }
     private void setAngle(){
         double closestValue = POTS_POSITIONS.get(0);
@@ -173,31 +175,31 @@ public class Turret725 {
         setAngle();
         this.currentxyzPosition = new Position(DistanceUnit.INCH,TURRET_LENGTH * Math.cos(currentAngleRAD),TURRET_LENGTH * Math.sin(currentAngleRAD),0,System.nanoTime());
 
-        if (currentPosition >= TURRET_MAX_POSITION) homed = true;
+        if (currentPosition >= Constants.TURRET_MAX_POSITION) homed = true;
         if (isHoming && homed) {Stop();}
 
         if(isBusy && ((Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR))){Stop();};
 
-        //if (InError()) {
-           // if(AUTOSTOP) isBusy = false;
-           // SetPIDCoef(S_PID_P_DEFAULT,S_PID_I_DEFAULT,S_PID_D_DEFAULT);
-       // }
-        //else { SetPIDCoef(TURRET_PID_P_DEFAULT,TURRET_PID_I_DEFAULT,TURRET_PID_D_DEFAULT); }
 
         if (isBusy) {
             if (isHoming && !homed) {
                     currentPower = homePower;
                     //if (homeTime.seconds() > 3) StartHome();
             } else {
-                controller.setPID(pCoef, iCoef, dCoef);
-                currentPower = controller.calculate(GetRawPos(), targetPosition);
+                //controller.setPID(pCoef, iCoef, dCoef);
+                //currentPower = controller.calculate(GetRawPos(), targetPosition);
+                if(targetPosition<Constants.TURRET_MAX_POSITION|| targetPosition< currentPosition)
+                    currentPower = -homePower;
+                else{
+                    currentPower = homePower;
+                }
             }
         }
         //safety lockouts
-        if (currentPosition <= TURRET_MIN_POSITION) {
+        if (currentPosition <= Constants.TURRET_MIN_POSITION) {
             currentPower = Math.min(Math.max(currentPower, -1), 0);
         }
-        if (currentPosition >= TURRET_MAX_POSITION) {
+        if (currentPosition >= Constants.TURRET_MAX_POSITION) {
             currentPower = Math.min(Math.max(currentPower, 0), 1);
         }
         rawSet(currentPower);

@@ -6,7 +6,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.susbsystems.Wrist;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
-@Disabled
 @TeleOp(name = "Wrist Test", group = "SubsysTest")
 public class WristTest extends LinearOpMode{
     Wrist wrist;

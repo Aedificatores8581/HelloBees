@@ -12,7 +12,7 @@ public class turretTest extends LinearOpMode {
     Turret725 Turret725;
     ButtonBlock runToPos, stopTurret725, dpadUp, dpadDown;
 
-    double targetPos = 0;
+    double targetPos = .241;
     @Override
     public void runOpMode() {
         Turret725 = new Turret725(hardwareMap);
