@@ -72,6 +72,8 @@ public class LinkageExtension725 {
     public void setOffset(double desiredOffset){offset = desiredOffset;}
 
     public void GoTo(double target_length) {
+        if(target_length>10){target_length = 10;}
+        if(target_length<0){target_length = 0;}
         this.targetPosition = target_length*IN_TO_TICKS;
         isBusy = true;
     }

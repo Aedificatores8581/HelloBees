@@ -50,6 +50,8 @@ public class robot_system {
     //armToOrientation Constants
     private static final double DEFAULT_WRIST_ANGLE = 75;
     private static final double SHOULDER_Z_OFFSET = 3;
+    private static final double EXTENSION_X_OFFSET = 3;
+    private static final double WRIST_Z_OFFSET = 6;
     private static final double Z_OFFSET = 12;
 
     //armToOrientation variables
@@ -246,7 +248,7 @@ public class robot_system {
         if (arm_state == 1){
             if(!turret.IsBusy()){
                 arm_state = 2;
-                extension.GoTo(4);
+                extension.GoTo(2);
             }
         }
         if(arm_state == 2 && !extension.IsBusy()){
@@ -255,16 +257,16 @@ public class robot_system {
         }
         if(arm_state == 3 && !shoulder.IsBusy()){
             arm_state = 4;
-            extension.GoTo(6);
+            extension.GoTo(extension.GetPos() +Math.abs (  Math.abs(arm_position.x)-Math.abs(target_position.x))-EXTENSION_X_OFFSET);
         }
         if(arm_state == 4 && !extension.IsBusy()){
             arm_state = 5;
-            extension.GoTo(7);
-            wrist.GoToHeight(6.75);
+            extension.GoTo(extension.GetPos() + 1);
+            wrist.GoToHeight(arm_position.z+WRIST_Z_OFFSET);
         }
         if(arm_state == 5 && !extension.IsBusy()){
             arm_state = 0;
-            wrist.GoToHeight(6.75);
+            //wrist.GoToHeight(6.75);
             arm_automation = false;
         }
     }
@@ -282,7 +284,15 @@ public class robot_system {
     public void shoulderSetPower(double power){shoulder.SetPower(power);}
     public void shoulderStop(){shoulder.Stop();}
     public boolean shoulderIsBusy(){return shoulder.IsBusy();}
-
+    //extension functions
+    //**************************************************************************************
+    //**************************************************************************************
+    public double getExtensionTarget(){return extension.GetTargetPos();}
+    public boolean isBusyExtension(){return extension.IsBusy();}
+    //wrist functions
+    //**************************************************************************************
+    //**************************************************************************************
+    public double getWristHeight(){return extension.GetTargetPos();}
 
     //armToPosition and Spray
     //**************************************************************************
@@ -310,7 +320,20 @@ public class robot_system {
             fullCycleState++;
             init_armToHome();
         }
-        if(fullCycleState == 3 && arm_ready){
+        if(fullCycleState == 3 && !arm_automation){
+            fullCycleState = 4;
+            target_position.y = 7;
+            init_armToPosition(target_position);
+        }
+        if(fullCycleState == 4 && !arm_automation){
+            fullCycleState++;
+            init_cycle();
+        }
+        if(fullCycleState == 5 && !cycling){
+            fullCycleState++;
+            init_armToHome();
+        }
+        if(fullCycleState ==6 && !arm_automation){
             fullCycleState = 0;
             fullCycleAutomation = false;
         }

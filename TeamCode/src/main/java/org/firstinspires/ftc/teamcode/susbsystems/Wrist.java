@@ -21,8 +21,10 @@ public class Wrist {
     //Wrist Constants
     private static final double DEG_TO_SERVO_POS = 90;
     private static final double WRIST_RADIUS = 7.5;
-    private static final double WRIST_MAX_HEIGHT = 6;
-    private static final double WRIST_MIN_HEIGHT = 1;
+    private static final double WRIST_MAX_HEIGHT = 7.5;
+    private static final double WRIST_MIN_HEIGHT = 4;
+    private static final double WRIST_MAX_POSITION = 1;
+    private static final double WRIST_MIN_POSITION = .2;
 
     //Shoulder private variables
     private Servo wrist_servo;
@@ -42,6 +44,8 @@ public class Wrist {
 
     public void GoToHeight(double target_height) {
         double temp;
+        if(target_height > WRIST_MAX_HEIGHT){target_height = WRIST_MAX_HEIGHT;}
+        if(target_height < WRIST_MIN_HEIGHT){target_height = WRIST_MIN_HEIGHT;}
         targetHeight = target_height;
         temp = target_height / WRIST_RADIUS;
         temp = Math.asin(temp);
@@ -75,7 +79,7 @@ public class Wrist {
     public void SetPos(double power) {
         wrist_is_busy = false;
         //safety checks
-        power = Math.min(Math.max(power, 0.2), 1);
+        power = Math.min(Math.max(power, WRIST_MIN_POSITION), WRIST_MAX_POSITION);
         wrist_servo.setPosition(power);
     }
     public void Stop() {

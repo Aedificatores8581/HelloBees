@@ -23,7 +23,7 @@ public class RobotTest extends OpMode {
     @Override
     public void init() {
         robot = new robot_system(hardwareMap);
-        armTarget = new Position(DistanceUnit.INCH,-24,7,-11.5,System.nanoTime());
+        armTarget = new Position(DistanceUnit.INCH,-25,-7,-11.5,System.nanoTime());
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
         startArm = new ButtonBlock()
@@ -81,6 +81,7 @@ public class RobotTest extends OpMode {
         //stopShoulder.update(gamepad1.a);
         //shoulderHome.update(gamepad1.b);
         stopStartFullCycle.update(gamepad1.a);
+        //startStopArm.update(gamepad1.a);
         stopHomeShoulder.update(gamepad1.b);
         homeArm.update(gamepad1.x);
         startStopFogCycle.update(gamepad1.y);
@@ -101,15 +102,17 @@ public class RobotTest extends OpMode {
         telemetry.addLine("(X:Home Arm) (Y:Start/Stop Cycle)");
         //telemetry.addLine("Fog Cycle: (X:Start) (Y:Stop)");
         //telemetry.addLine("Toggle Direction ()");
-        //telemetry.addLine("+/- RunFor: (DPadUp:+) (DPadDown:-)");
+        telemetry.addLine("+/- Y Position: (DPadUp:+) (DPadDown:-)");
         /*telemetry.addLine();
         telemetry.addLine("  Telemetry Info:");
         telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
         telemetry.addData("Target Position: ", pump.GetTarget()+" Busy: "+pump.isBusy());*/
         telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
-        telemetry.addData("Arm Position: (X)", robot.getCurrent_Arm_Position().x+" (Y) "+robot.getCurrent_Arm_Position().y+" (Z) "+robot.getCurrent_Arm_Position().z);
-        telemetry.addData("Arm Target: (X)", armTarget.x+" (Y) "+armTarget.y+" (Z) "+armTarget.z);
+        telemetry.addData("Arm Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
+        telemetry.addData("Arm Target:"," (X) %.2f (Y) %.2f (Z) %.2f", armTarget.x,armTarget.y,armTarget.z);
         telemetry.addData("Arm Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready());
+        telemetry.addData("Extension:"," (PosTarget) %.2f (isBusy) %b",robot.getExtensionTarget(),robot.isBusyExtension());
+        telemetry.addData("Wrist: ","%.2f",robot.getWristHeight());
         telemetry.update();
     }
     private void yPos(int new_y_Position){

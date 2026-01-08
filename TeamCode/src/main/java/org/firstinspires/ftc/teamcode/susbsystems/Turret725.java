@@ -188,7 +188,7 @@ public class Turret725 {
             } else {
                 //controller.setPID(pCoef, iCoef, dCoef);
                 //currentPower = controller.calculate(GetRawPos(), targetPosition);
-                if(targetPosition<Constants.TURRET_MAX_POSITION|| targetPosition< currentPosition)
+                if(targetPosition<=Constants.TURRET_MAX_POSITION|| targetPosition< currentPosition)
                     currentPower = -homePower;
                 else{
                     currentPower = homePower;
