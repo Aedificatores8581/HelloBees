@@ -70,6 +70,13 @@ public class Wrist {
         temp = Math.sin(temp);
         return (WRIST_RADIUS *temp);
     }
+    public double GetLength(){
+        double temp;
+        temp = currentPosition * DEG_TO_SERVO_POS;
+        temp = Math.toRadians(temp);
+        temp = Math.cos(temp);
+        return (WRIST_RADIUS *temp);
+    }
     public double GetRawPos() {return currentPosition;}
     public double GetTargetPos() {return targetPosition * DEG_TO_SERVO_POS;}
     public double GetRawTargetPos() {return targetPosition;}

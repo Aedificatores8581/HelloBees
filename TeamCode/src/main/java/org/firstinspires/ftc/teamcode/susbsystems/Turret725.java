@@ -136,11 +136,11 @@ public class Turret725 {
         isBusy = true;
     }
 
-    public void GetTargetPosition(double targetAngle){/*Put something here*/}
+    public double GetTargetPosition(){return targetPosition;}
 
     public double GetPos() {return (currentAngle);}
     public double GetRawPos() {return turretPot.getVoltage();}
-    public double GetTargetPos() {return GetRawPos();}
+    //public double GetTargetPos() {return GetRawPos();}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR;}
     public boolean IsBusy() {return isBusy;}
@@ -186,12 +186,10 @@ public class Turret725 {
                     currentPower = homePower;
                     //if (homeTime.seconds() > 3) StartHome();
             } else {
-                //controller.setPID(pCoef, iCoef, dCoef);
-                //currentPower = controller.calculate(GetRawPos(), targetPosition);
-                if(targetPosition<=Constants.TURRET_MAX_POSITION|| targetPosition< currentPosition)
-                    currentPower = -homePower;
+                if(targetPosition<currentPosition)
+                    currentPower = .18;
                 else{
-                    currentPower = homePower;
+                    currentPower = - .18;
                 }
             }
         }

@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.susbsystems.tests;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -11,22 +12,23 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.susbsystems.robot_system;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 
-@TeleOp (name = "Robot Test", group = "SubsysTest")
-public class RobotTest extends OpMode {
+@Config
+@TeleOp (name = "ArmPositionTest", group = "SubsysTest")
+public class ArmPositionTest extends OpMode {
     robot_system robot;
     ButtonBlock stopArm,startArm, startFogCycle, stopFogCycle;
     ButtonBlock stopShoulder,shoulderHome;
     ButtonBlock stopHomeShoulder,startStopArm, homeArm, startStopFogCycle;
-    ButtonBlock stopStartFullCycle;
+    ButtonBlock stopStartFullCycle,turret135, turret180, turret0, turret225, turret90, turret45;
     Position armTarget;
-    ButtonBlock dpadUp, dpadDown, dpadLeft, dpadRight;
+    ButtonBlock dpadUp, dpadDown;
     int yPosTarget = 0;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new robot_system(hardwareMap);
-        armTarget = new Position(DistanceUnit.INCH,-30,-7,-6,System.nanoTime());
+        armTarget = new Position(DistanceUnit.INCH,-25,-7,-11.5,System.nanoTime());
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
         startArm = new ButtonBlock()
@@ -59,10 +61,20 @@ public class RobotTest extends OpMode {
                 .onTrue(()-> {
                     if (robot.isFullCycleAutomation()) {robot.stopFullCycle();}
                     else {robot.startFullCycle(armTarget);}});
-        dpadUp = new ButtonBlock().onTrue(() -> {yPos(yPosTarget++);});
-        dpadDown = new ButtonBlock().onTrue(() -> {yPos(yPosTarget--);});
-        dpadLeft = new ButtonBlock().onTrue(() -> {armTarget.z++;});
-        dpadRight = new ButtonBlock().onTrue(() -> {armTarget.z--;});
+        //dpadUp = new ButtonBlock().onTrue(() -> {yPos(yPosTarget++);});
+        //dpadDown = new ButtonBlock().onTrue(() -> {yPos(yPosTarget--);});
+        turret135 = new ButtonBlock()
+                .onTrue(()->{robot.moveTurret(135);});
+        turret0 = new ButtonBlock()
+                .onTrue(()->{robot.moveTurret(0);});
+        turret180 = new ButtonBlock()
+                .onTrue(()->{robot.moveTurret(180);});
+        turret225 = new ButtonBlock()
+                .onTrue(()->{robot.moveTurret(225);});
+        turret90 = new ButtonBlock()
+                .onTrue(()->{robot.moveTurret(90);});
+        turret45 = new ButtonBlock()
+                .onTrue(()->{robot.moveTurret(45);});
         telemetry.addLine("Initialized");
         telemetry.update();
 
@@ -71,11 +83,15 @@ public class RobotTest extends OpMode {
     public void loop() {
         buttonEvents();
         robot.robot_drive(gamepad1.left_stick_y, gamepad1.right_stick_x);
-        if (!robot.shoulderIsBusy()) robot.shoulderSetPower(-gamepad1.right_stick_y);
-        else if (Math.abs(gamepad1.right_stick_y) > 0) {
+        if (!robot.shoulderIsBusy()) robot.shoulderSetPower(-gamepad2.right_stick_y);
+        else if (Math.abs(gamepad2.right_stick_y) > 0) {
             robot.shoulderStop();
-            robot.shoulderSetPower(-gamepad1.right_stick_y);
+            robot.shoulderSetPower(-gamepad2.right_stick_y);
         }
+        if(gamepad2.dpad_up){robot.moveWristManual(.5);}
+        if(gamepad2.dpad_down){robot.moveWristManual(-.5);}
+        robot.moveExtensionManual(gamepad2.left_stick_y);
+        robot.moveTurretManual(gamepad2.left_trigger - gamepad2.right_trigger);
         robot.update();
         telemetry();
     }
@@ -86,45 +102,49 @@ public class RobotTest extends OpMode {
         //stopShoulder.update(gamepad1.a);
         //shoulderHome.update(gamepad1.b);
         //stopStartFullCycle.update(gamepad1.a);
-        startStopArm.update(gamepad1.a);
+        //startStopArm.update(gamepad1.a);
         stopHomeShoulder.update(gamepad1.b);
         homeArm.update(gamepad1.x);
-        startStopFogCycle.update(gamepad1.y);
+        turret135.update(gamepad2.a);
+        turret45.update(gamepad2.y);
+        turret0.update(gamepad2.x);
+        turret90.update(gamepad2.b);
+        //startStopFogCycle.update(gamepad1.y);
         //startFogCycle.update(gamepad1.x);
         //stopFogCycle.update(gamepad1.y);
-        dpadUp.update(gamepad1.dpad_up);
-        dpadDown.update(gamepad1.dpad_down);
-        dpadLeft.update(gamepad1.dpad_left);
-        dpadRight.update(gamepad1.dpad_right);
+        //dpadUp.update(gamepad1.dpad_up);
+        //dpadDown.update(gamepad1.dpad_down);
     }
 
     @Override
     public void stop() {
     }
     private void telemetry() {
-        telemetry.addLine("  Controls Guide:");
+        telemetry.addLine("  Controls Guide: Gamepad1");
         //telemetry.addLine("Arm to Pos: (A:Stop) (B:Start)");
         //telemetry.addLine("Shoulder: (A:Stop) (B:Home)");
-        //telemetry.addLine("(A:Stop/Start Full) (B:Home/Stop Shoulder)");
-        telemetry.addLine("(A:Stop/Start Arm To Pos) (B:Home/Stop Shoulder)");
-        telemetry.addLine("(X:Home Arm) (Y:Start/Stop Cycle)");
+        telemetry.addLine("(B:Home/Stop Shoulder)");
+        telemetry.addLine("(X:Home Arm)");
+        telemetry.addLine("Left Stick Y: Forward/Back  Right Stick X: Turn");
+        telemetry.addLine("  Controls Guide: Gamepad2");
+        telemetry.addLine("Left Stick Y: Extension  Right Stick Y: Shoulder");
+        telemetry.addLine("Dpad Up/Down: Wrist  Triggers: Turret");
+        telemetry.addLine("[Turret] A 135, Y 45, B 90, X 0");
         //telemetry.addLine("Fog Cycle: (X:Start) (Y:Stop)");
         //telemetry.addLine("Toggle Direction ()");
-        telemetry.addLine("+/- Y Position: (DPadUp:+) (DPadDown:-)");
-        telemetry.addLine("+/- Z Position: (DPadLeft:+) (DPadRight:-)");
+        //telemetry.addLine("+/- Y Position: (DPadUp:+) (DPadDown:-)");
         /*telemetry.addLine();
         telemetry.addLine("  Telemetry Info:");
         telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
         telemetry.addData("Target Position: ", pump.GetTarget()+" Busy: "+pump.isBusy());*/
-        telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
-        telemetry.addLine("Telemetry: (Arm)");
-        telemetry.addData("Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
-        telemetry.addData("Target:"," (X) %.2f (Y) %.2f (Z) %.2f", armTarget.x,armTarget.y,armTarget.z);
-        telemetry.addData("Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready());
-        telemetry.addData("Homed: (Yes/No)", robot.isArmHomed()+" (Busy) "+robot.isArmBusy()+" BadPos: "+robot.isArm_last_position_bad());
+        //telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
+        telemetry.addLine("Telemetry:");
+        telemetry.addData("Arm Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
+        //telemetry.addData("Arm Target:"," (X) %.2f (Y) %.2f (Z) %.2f", armTarget.x,armTarget.y,armTarget.z);
+        telemetry.addData("Arm Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready()+" (Busy) "+robot.isArmBusy());
         //telemetry.addData("Extension:"," (PosTarget) %.2f (isBusy) %b",robot.getExtensionTarget(),robot.isBusyExtension());
         telemetry.addData("Wrist: H:","%.2f L:%.2f",robot.getWristHeight(),robot.getWristLength());
-        //telemetry.addData("Turret:", "(isBusy) %b (Pos) %.3f (Target) %.3f",robot.turretIsBusy(),robot.turretPosition(),robot.turretTargetPosition());
+        telemetry.addData("Turret:", "(isBusy) %b (Pos) %.3f (Target) %.3f",robot.turretIsBusy(),robot.turretPosition(),robot.turretTargetPosition());
         telemetry.update();
     }
     private void yPos(int new_y_Position){

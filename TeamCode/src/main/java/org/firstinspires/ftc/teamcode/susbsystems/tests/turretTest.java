@@ -51,7 +51,7 @@ public class turretTest extends LinearOpMode {
             telemetry.addData("Is Busy", Turret725.IsBusy());
             telemetry.addData("Target Pos", targetPos);
             telemetry.addData("Current Pos:", "(Deg) "+Turret725.GetPos()+" (Raw) "+Turret725.GetRawPos());
-            telemetry.addData("Active Target Pos", "Deg: "+Turret725.GetTargetPos()+" Raw: "+Turret725.GetRawTargetPos());
+            telemetry.addData("Active Target Pos", "Deg: N/A Raw: "+Turret725.GetRawTargetPos());
             telemetry.addData("Pos", "X: "+Turret725.getPosition().x+" Y: "+Turret725.getPosition().y+" Z:"+Turret725.getPosition().z);
             telemetry.update();
         }
