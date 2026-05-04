@@ -40,12 +40,15 @@ public class Vision725 {
     private int targetId = -1;
     private AprilTagDetection avgDetection;
     private boolean usingFreshDetections = true;
+    private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0);
+    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,90, -90, 0, 0);
+
     public Vision725(HardwareMap hm) {
         webcam = hm.get(WebcamName.class, "Webcam 1");
         processor = new AprilTagProcessor.Builder()
-                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0,0,0,0))
-                .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-                .setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
+                .setCameraPose(cameraPosition, cameraOrientation)
+                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
+                //.setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
                 //.setLensIntrinsics(907.659, 907.659, 659.985, 357.874) // For Global Shutter Camera
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_25h9)
                 .setTagLibrary(
@@ -56,11 +59,11 @@ public class Vision725 {
                 )
                 .build();
         // For Intrinsics refer to TeamCode/src/main/res/xml/teamwebcamcalibrations.xml
-        portal = new VisionPortal.Builder()
-                .setCamera(webcam)
-                .setCameraResolution(new Size(width,height))
-                .addProcessor(processor)
-                .build();
+        VisionPortal.Builder builder = new VisionPortal.Builder();
+        builder.setCamera(webcam);
+        builder.setCameraResolution(new Size(width,height));
+        builder.addProcessor(processor);
+        portal = builder.build();
     }
     public void Update() {
         detections = processor.getDetections();
@@ -103,6 +106,20 @@ public class Vision725 {
         return avgDetection;
     }
     public ArrayList<AprilTagDetection> GetDetections() { return detections; }
+
+    public Position GetPosition(){
+        if (detections != null){
+            if(detections.size()>1) {return null;}
+            AprilTagDetection detection = detections.get(0);
+            Position detPose = detection.robotPose.getPosition();
+            Position tempPose = detPose;
+            detPose.x = tempPose.z;
+            detPose.z = tempPose.y;
+            detPose.y = -tempPose.x;
+             return detPose;
+            }
+        else {return null;}
+    }
 
     private AprilTagDetection averageDetection(AprilTagDetection detection1, AprilTagDetection detection2) {
         Point[] avgCorners;

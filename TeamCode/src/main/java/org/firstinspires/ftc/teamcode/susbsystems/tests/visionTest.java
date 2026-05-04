@@ -37,6 +37,8 @@ public class visionTest extends OpMode {
                 Position detPose = detection.robotPose.getPosition();
                 telemetry.addLine(String.format("id: %03d x: %.2f y: %.2f z: %.2f", detection.id, detPose.x, detPose.y, detPose.z) );
             }
+
+        telemetry.addLine("Gamepad1 A: Toggle Avg B: Toggle Fresh");
         telemetry.addData("Target Tag Id", vision.GetTargetID());
         telemetry.addData("Averaging Data Set Size",vision.DetectionsForAvgCount());
         telemetry.addData("Averaging",averaging);
@@ -44,6 +46,13 @@ public class visionTest extends OpMode {
         if (vision.GetAverageDetection() != null) {
             Position avgPose = vision.GetAverageDetection().robotPose.getPosition();
             telemetry.addData("Average Tag", String.format("x: %.2f y: %.2f z: %.2f", avgPose.x, avgPose.y, avgPose.z) );
+        }
+        if(vision.GetPosition() != null){
+            Position detPose = vision.GetPosition();
+            telemetry.addLine(String.format("[Corrected]x: %.2f y: %.2f z: %.2f", detPose.x, detPose.y, detPose.z) );
+        }
+        else {
+            telemetry.addLine("Null Tag Position");
         }
         telemetry.update();
     }

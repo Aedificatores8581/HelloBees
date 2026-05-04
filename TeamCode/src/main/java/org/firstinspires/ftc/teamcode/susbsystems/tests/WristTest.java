@@ -56,7 +56,9 @@ public class WristTest extends LinearOpMode{
             telemetry.addLine("  Telemetry Info:");
             telemetry.addData("Is Busy", wrist.IsBusy());
             telemetry.addData("Target Pos", targetPos);
-            telemetry.addData("Current Pos","Deg: "+wrist.GetPos()+" Raw: "+wrist.GetRawPos()+" Height: "+wrist.GetHeight());
+            telemetry.addData("[Wrist]"," H: %.2f L: %.2f Angle: %.2f",wrist.GetHeight(), wrist.GetLength(), wrist.GetAngle());
+            telemetry.addData("[ABC]"," A: %.2f B: %.2f C: %.2f",wrist.GetA(), wrist.GetB(), wrist.GetC());
+            telemetry.addData("[Servo]"," RawPos: %.2f Angle: %.2f",wrist.GetRawPos(),wrist.GetServoAngle());
             telemetry.addData("Active Target Pos", "Deg: "+wrist.GetTargetPos()+" Raw: "+wrist.GetRawTargetPos()+" T_Height: "+wrist.GetTargetHeight());
             telemetry.update();
         }
