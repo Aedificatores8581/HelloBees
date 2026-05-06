@@ -4,7 +4,6 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
@@ -18,7 +17,7 @@ public class RobotTest extends OpMode {
     ButtonBlock stopShoulder,shoulderHome;
     ButtonBlock stopHomeShoulder,startStopArm, homeArm, startStopFogCycle;
     ButtonBlock stopStartFullCycle;
-    Position armTarget;
+    Position armTarget, tagLocation;
     ButtonBlock dpadUp, dpadDown, dpadLeft, dpadRight;
     int yPosTarget = 0;
 
@@ -27,6 +26,7 @@ public class RobotTest extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new robot_system(hardwareMap);
         armTarget = new Position(DistanceUnit.INCH,-30,-7,-6,System.nanoTime());
+        tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
         startArm = new ButtonBlock()
@@ -77,6 +77,7 @@ public class RobotTest extends OpMode {
             robot.shoulderSetPower(-gamepad1.right_stick_y);
         }
         robot.update();
+        tagLocation = robot.getTagLocation();
         telemetry();
     }
     private void buttonEvents() {
@@ -125,6 +126,7 @@ public class RobotTest extends OpMode {
         //telemetry.addData("Extension:"," (PosTarget) %.2f (isBusy) %b",robot.getExtensionTarget(),robot.isBusyExtension());
         telemetry.addData("Wrist: H:","%.2f L:%.2f",robot.getWristHeight(),robot.getWristLength());
         //telemetry.addData("Turret:", "(isBusy) %b (Pos) %.3f (Target) %.3f",robot.turretIsBusy(),robot.turretPosition(),robot.turretTargetPosition());
+        telemetry.addLine(String.format("[TAG] Detected %b x: %.2f y: %.2f z: %.2f", robot.isTagDetected(),tagLocation.x, tagLocation.y, tagLocation.z) );
         telemetry.update();
     }
     private void yPos(int new_y_Position){

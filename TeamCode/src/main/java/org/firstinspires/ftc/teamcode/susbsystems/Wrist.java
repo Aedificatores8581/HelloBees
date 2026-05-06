@@ -28,10 +28,10 @@ public class Wrist {
     private static final double WRIST_MAX_POSITION = 1;
     private static final double WRIST_MIN_POSITION = .2;
     //wrist angle constants
-    private static final double a = 64;
-    private static final double b = 104;
-    private static final double c = 106.73;
-    private static final double d = 68.8186;
+    private static final double a = 64; //Unit: mm
+    private static final double b = 104;//Unit: mm
+    private static final double c = 106.73;//Unit: mm
+    private static final double d = 68.8186;//Unit: mm
     private double A,B,C;
 
     //wrist private variables
@@ -73,13 +73,15 @@ public class Wrist {
         wristStopwatch.reset();
     }
     public double GetAngle() {
-        A = (2*c*d)-(2*a*c*(Math.toDegrees(Math.cos(Math.toRadians(260.5377-currentWristServoAngle)))));
-        B = -(2*a*c*(Math.toDegrees(Math.sin(Math.toRadians(260.5377-currentWristServoAngle)))));
-        C = Math.pow(a,2)-Math.pow(b,2)+Math.pow(c,2)+Math.pow(d,2)-(2*d*a*(Math.toDegrees(Math.cos(Math.toRadians(currentWristServoAngle-260.5377)))));
+        A = (2*c*d)-(2*a*c*(Math.cos(Math.toRadians(260.5377-currentWristServoAngle)))); //=(2*$C$3*$D$3)-(2*$A$3*$C$3*(COS(RADIANS(260.5377-$B18))))
+        B = -(2*a*c*(Math.sin(Math.toRadians(260.5377-currentWristServoAngle)))); //=-(2*$A$3*$C$3*(SIN(RADIANS(260.5377-B18))))
+        C = Math.pow(a,2)-Math.pow(b,2)+Math.pow(c,2)+Math.pow(d,2)-(2*d*a*(Math.cos(Math.toRadians(currentWristServoAngle-260.5377))));
+        //=POWER($A$3,2)-POWER($B$3,2)+POWER($C$3,2)+POWER($D$3,2)-(2*$D$3*$A$3*(COS(RADIANS(B18-260.5377))))
         //A = (2*c*d)-(2*a*c*(Math.toDegrees(Math.cos(260.5377-Math.toRadians(currentWristServoAngle)))));
        // B = -(2*a*c*(Math.toDegrees(Math.sin(260.5377-Math.toRadians(currentWristServoAngle)))));
        // C = Math.pow(a,2)-Math.pow(b,2)+Math.pow(c,2)+Math.pow(d,2)-(2*d*a*(Math.toDegrees(Math.cos(Math.toRadians(currentWristServoAngle)-260.5377))));
-        currentAngle = 226.9955 - (2* Math.toDegrees(Math.atan(Math.toRadians((-B-Math.sqrt(Math.pow(B,2)-Math.pow(C,2)+Math.pow(A,2)))/(C-A)))));
+        currentAngle = 226.9955 - (2*( Math.toDegrees(Math.atan(((-1*B)-Math.sqrt((Math.pow(B,2)-Math.pow(C,2)+Math.pow(A,2))))/(C-A)))));
+        //=226.9955-(2*(DEGREES(ATAN(((-1*B7)-SQRT((POWER(B7,2))-(POWER(B8,2))+(POWER(B6,2))))/(B8-B6)))))
         return currentAngle;
     }
     public double GetServoAngle() {

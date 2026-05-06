@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
+import static org.firstinspires.ftc.teamcode.Constants.EXTENSION_MAX_POSITION;
+import static org.firstinspires.ftc.teamcode.Constants.EXTENSION_MIN_POSITION;
+
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -23,8 +26,7 @@ public class LinkageExtension725 {
     public static final double PID_I_DEFAULT = 0;
     public static final double PID_D_DEFAULT = 0.1;
     private double pCoef = PID_P_DEFAULT, iCoef = PID_I_DEFAULT, dCoef = PID_D_DEFAULT;
-    private static final double EXTENSION_MIN_POSITION = 0;
-    private static final double EXTENSION_MAX_POSITION = 10;
+
     private static final double IN_TO_TICKS = 1725/EXTENSION_MAX_POSITION;
     private static final double EXTENSION_MIN_POSITION_TICKS = EXTENSION_MIN_POSITION* IN_TO_TICKS;
     private static final double EXTENSION_MAX_POSITION_TICKS = EXTENSION_MAX_POSITION * IN_TO_TICKS;

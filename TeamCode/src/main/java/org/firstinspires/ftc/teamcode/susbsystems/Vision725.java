@@ -8,6 +8,7 @@ import static org.firstinspires.ftc.teamcode.util.Util.avPoint;
 import android.util.Size;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
@@ -18,6 +19,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
+import org.firstinspires.ftc.vision.apriltag.AprilTagPoseFtc;
+import org.firstinspires.ftc.vision.apriltag.AprilTagPoseRaw;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.opencv.core.Point;
 
@@ -34,20 +37,24 @@ public class Vision725 {
     ArrayList<AprilTagDetection> detections;
     ArrayList<AprilTagDetection> freshDetections;
     ArrayList<AprilTagDetection> detectionsForAvg;
+    private Position tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
     final int width = 640, height = 480;
     private boolean gettingAvg = false;
     private int avgPasses;
     private int targetId = -1;
+    private int tagID = 0;
     private AprilTagDetection avgDetection;
     private boolean usingFreshDetections = true;
+    private boolean isTagDetected = false;
     private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0);
-    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,90, -90, 0, 0);
+    private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,-90, -90, 0, 0);
+    private static ElapsedTime visionTimer = new ElapsedTime();
 
     public Vision725(HardwareMap hm) {
         webcam = hm.get(WebcamName.class, "Webcam 1");
         processor = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraPosition, cameraOrientation)
-                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
+                .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
                 //.setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
                 //.setLensIntrinsics(907.659, 907.659, 659.985, 357.874) // For Global Shutter Camera
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_25h9)
@@ -62,25 +69,38 @@ public class Vision725 {
         VisionPortal.Builder builder = new VisionPortal.Builder();
         builder.setCamera(webcam);
         builder.setCameraResolution(new Size(width,height));
+        processor.setDecimation(1);
         builder.addProcessor(processor);
         portal = builder.build();
+        visionTimer.reset();
     }
     public void Update() {
-        detections = processor.getDetections();
-        freshDetections = processor.getFreshDetections();
-        if (SORT_BY_X) {
-            SortByX(detections);
-            SortByX(freshDetections);
-        }
-        ArrayList<AprilTagDetection> getAvgDetections = detections;
-        if (usingFreshDetections) getAvgDetections = freshDetections;
-        if (getAvgDetections != null && gettingAvg) {
-            for (AprilTagDetection detection : getAvgDetections) {
-
-                if (detection.id == targetId) {
-                    detectionsForAvg.add(detection);
+        if(visionTimer.milliseconds()>150){
+            visionTimer.reset();
+            detections = processor.getDetections();
+            freshDetections = processor.getFreshDetections();
+            if(freshDetections != null){
+            if(freshDetections.isEmpty())
+            {
+                tagLocation = new Position(DistanceUnit.INCH,0, 0, 0, 0);
+            }
+            else
+            {
+            for (AprilTagDetection detection : freshDetections) {
+                if (detection.metadata != null){
+                    tagLocation.z = detection.ftcPose.z;
+                    tagLocation.x = -detection.ftcPose.y;
+                    tagLocation.y = detection.ftcPose.x;
+                    tagID = detection.id;
                 }
             }
+            }
+            } else
+            {
+                tagLocation = new Position(DistanceUnit.INCH,0, 0, 0, 0);
+                tagID = -1;
+            }
+            isTagDetected = tagLocation.x != 0;
         }
     }
     public void UsingFreshDetections(boolean bool) {usingFreshDetections=bool;} // Fresh Detections are as implied new detections which are used to prevent re-using the same detection data
@@ -106,20 +126,9 @@ public class Vision725 {
         return avgDetection;
     }
     public ArrayList<AprilTagDetection> GetDetections() { return detections; }
+    public ArrayList<AprilTagDetection> GetFreshDetections() { return freshDetections; }
 
-    public Position GetPosition(){
-        if (detections != null){
-            if(detections.size()>1) {return null;}
-            AprilTagDetection detection = detections.get(0);
-            Position detPose = detection.robotPose.getPosition();
-            Position tempPose = detPose;
-            detPose.x = tempPose.z;
-            detPose.z = tempPose.y;
-            detPose.y = -tempPose.x;
-             return detPose;
-            }
-        else {return null;}
-    }
+    public Position GetPos(){return tagLocation;}
 
     private AprilTagDetection averageDetection(AprilTagDetection detection1, AprilTagDetection detection2) {
         Point[] avgCorners;
@@ -151,4 +160,6 @@ public class Vision725 {
             }
         });
     }
+    public boolean isTagDetected(){return isTagDetected;}
+    public int getTagID(){return tagID;}
 }

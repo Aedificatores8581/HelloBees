@@ -1,34 +1,32 @@
-package org.firstinspires.ftc.teamcode.susbsystems.tests;
+package org.firstinspires.ftc.teamcode;
 
 import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.susbsystems.robot_system;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 
-@Config
-@TeleOp (name = "ArmPositionTest", group = "SubsysTest")
-public class ArmPositionTest extends OpMode {
+@TeleOp (name = "!Hello Bees")
+public class Hello_Bees_Demo3 extends OpMode {
     robot_system robot;
-    ButtonBlock stopArm,startArm, startFogCycle, stopFogCycle;
+    ButtonBlock stopArm,startArm, startFogCycle, stopFogCycle, startTreatment;
     ButtonBlock stopShoulder,shoulderHome;
     ButtonBlock stopHomeShoulder,startStopArm, homeArm, startStopFogCycle;
-    ButtonBlock stopStartFullCycle,turret135, turret180, turret0, turret225, turret90, turret45;
-    Position armTarget;
-    ButtonBlock dpadUp, dpadDown;
+    ButtonBlock stopStartFullCycle;
+    Position armTarget, tagLocation;
+    ButtonBlock dpadUp, dpadDown, dpadLeft, dpadRight;
     int yPosTarget = 0;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new robot_system(hardwareMap);
-        armTarget = new Position(DistanceUnit.INCH,-25,-7,-11.5,System.nanoTime());
+        armTarget = new Position(DistanceUnit.INCH,-30,-7,-6,System.nanoTime());
+        tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
         startArm = new ButtonBlock()
@@ -55,26 +53,18 @@ public class ArmPositionTest extends OpMode {
                     else {robot.startFogCycle();}});
         homeArm = new ButtonBlock()
                 .onTrue(()-> {
-                    if (robot.isArm_automation()) {robot.stopArmToPosition();}
-                    else {robot.armHome();}});
+                    robot.armHome();});
         stopStartFullCycle = new ButtonBlock()
                 .onTrue(()-> {
                     if (robot.isFullCycleAutomation()) {robot.stopFullCycle();}
                     else {robot.startFullCycle(armTarget);}});
-        //dpadUp = new ButtonBlock().onTrue(() -> {yPos(yPosTarget++);});
-        //dpadDown = new ButtonBlock().onTrue(() -> {yPos(yPosTarget--);});
-        turret135 = new ButtonBlock()
-                .onTrue(()->{robot.moveTurret(135);});
-        turret0 = new ButtonBlock()
-                .onTrue(()->{robot.moveTurret(0);});
-        turret180 = new ButtonBlock()
-                .onTrue(()->{robot.moveTurret(180);});
-        turret225 = new ButtonBlock()
-                .onTrue(()->{robot.moveTurret(225);});
-        turret90 = new ButtonBlock()
-                .onTrue(()->{robot.moveTurret(90);});
-        turret45 = new ButtonBlock()
-                .onTrue(()->{robot.moveTurret(45);});
+        startTreatment = new ButtonBlock()
+                .onTrue(()->{robot.startTreatment();});
+        dpadUp = new ButtonBlock().onTrue(() -> {yPos(yPosTarget++);});
+        dpadDown = new ButtonBlock().onTrue(() -> {yPos(yPosTarget--);});
+        dpadLeft = new ButtonBlock().onTrue(() -> {armTarget.z++;});
+        dpadRight = new ButtonBlock().onTrue(() -> {armTarget.z--;});
+        robot.wristGoPos(.9);
         telemetry.addLine("Initialized");
         telemetry.update();
 
@@ -83,6 +73,7 @@ public class ArmPositionTest extends OpMode {
     public void loop() {
         buttonEvents();
         robot.robot_drive(gamepad1.left_stick_y, gamepad1.right_stick_x);
+
         if (!robot.shoulderIsBusy()) robot.shoulderSetPower(-gamepad2.right_stick_y);
         else if (Math.abs(gamepad2.right_stick_y) > 0) {
             robot.shoulderStop();
@@ -93,6 +84,8 @@ public class ArmPositionTest extends OpMode {
         robot.moveExtensionManual(gamepad2.left_stick_y);
         robot.moveTurretManual(gamepad2.left_trigger - gamepad2.right_trigger);
         robot.update();
+        tagLocation = robot.getTagLocation();
+
         telemetry();
     }
     private void buttonEvents() {
@@ -102,49 +95,40 @@ public class ArmPositionTest extends OpMode {
         //stopShoulder.update(gamepad1.a);
         //shoulderHome.update(gamepad1.b);
         //stopStartFullCycle.update(gamepad1.a);
-        //startStopArm.update(gamepad1.a);
+        startStopArm.update(gamepad1.a);
         stopHomeShoulder.update(gamepad1.b);
         homeArm.update(gamepad1.x);
-        turret135.update(gamepad2.a);
-        turret180.update(gamepad2.y);
-        turret0.update(gamepad2.x);
-        turret225.update(gamepad2.b);
-        //startStopFogCycle.update(gamepad1.y);
+        startTreatment.update(gamepad1.y);
         //startFogCycle.update(gamepad1.x);
         //stopFogCycle.update(gamepad1.y);
-        //dpadUp.update(gamepad1.dpad_up);
-        //dpadDown.update(gamepad1.dpad_down);
+        dpadUp.update(gamepad1.dpad_up);
+        dpadDown.update(gamepad1.dpad_down);
+        dpadLeft.update(gamepad1.dpad_left);
+        dpadRight.update(gamepad1.dpad_right);
     }
 
     @Override
     public void stop() {
     }
     private void telemetry() {
-        telemetry.addLine("  Controls Guide: Gamepad1");
-        //telemetry.addLine("Arm to Pos: (A:Stop) (B:Start)");
-        //telemetry.addLine("Shoulder: (A:Stop) (B:Home)");
-        telemetry.addLine("(B:Home/Stop Shoulder)");
-        telemetry.addLine("(X:Home Arm)");
-        telemetry.addLine("Left Stick Y: Forward/Back  Right Stick X: Turn");
+        telemetry.addLine("  Controls Guide:");
+        telemetry.addLine("(A:Stop/Start Arm To Pos) (B:Home/Stop Shoulder)");
+        telemetry.addLine("(X:Home Arm) (Y:Start Treatment)");
+        telemetry.addData("[Ready] Treat: ",robot.isReadyToTreat()+" Arm: "+robot.isArmHomed());
+         telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
+        telemetry.addLine("Telemetry: (Arm)");
+        telemetry.addData("Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
+        telemetry.addData("Target:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getTarget_position().x,robot.getTarget_position().y,robot.getTarget_position().z);
+        telemetry.addData("Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready());
+        telemetry.addData("Homed: (Yes/No)", robot.isArmHomed()+" (Busy) "+robot.isArmBusy()+" BadPos: "+robot.isArm_last_position_bad());
+        telemetry.addData("Wrist: H:","%.2f L:%.2f",robot.getWristHeight(),robot.getWristLength());
+        telemetry.addData("Shoulder: H:","%.2f Raw:%.2f",robot.shoulderHeight(),robot.shoulderRaw());
+        telemetry.addLine(String.format("[TAG] Detected %b x: %.2f y: %.2f z: %.2f", robot.isTagDetected(),tagLocation.x, tagLocation.y, tagLocation.z) );
+        telemetry.addLine(String.format("[Homed] Shoulder %b Turret: %b Extension: %b", robot.shoulderIsHomed(),robot.turretIsHomed(),robot.isExtensionHome()) );
         telemetry.addLine("  Controls Guide: Gamepad2");
         telemetry.addLine("Left Stick Y: Extension  Right Stick Y: Shoulder");
         telemetry.addLine("Dpad Up/Down: Wrist  Triggers: Turret");
-        telemetry.addLine("[Turret] A 135, Y 180, B 225, X 0");
-        //telemetry.addLine("Fog Cycle: (X:Start) (Y:Stop)");
-        //telemetry.addLine("Toggle Direction ()");
-        //telemetry.addLine("+/- Y Position: (DPadUp:+) (DPadDown:-)");
-        /*telemetry.addLine();
-        telemetry.addLine("  Telemetry Info:");
-        telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
-        telemetry.addData("Target Position: ", pump.GetTarget()+" Busy: "+pump.isBusy());*/
-        //telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
-        telemetry.addLine("Telemetry:");
-        telemetry.addData("Arm Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
-        //telemetry.addData("Arm Target:"," (X) %.2f (Y) %.2f (Z) %.2f", armTarget.x,armTarget.y,armTarget.z);
-        telemetry.addData("Arm Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready()+" (Busy) "+robot.isArmBusy());
-        //telemetry.addData("Extension:"," (PosTarget) %.2f (isBusy) %b",robot.getExtensionTarget(),robot.isBusyExtension());
-        telemetry.addData("Wrist: H:","%.2f L:%.2f",robot.getWristHeight(),robot.getWristLength());
-        telemetry.addData("Turret:", "(isBusy) %b (Pos) %.3f (Target) %.3f",robot.turretIsBusy(),robot.turretPosition(),robot.turretTargetPosition());
+
         telemetry.update();
     }
     private void yPos(int new_y_Position){

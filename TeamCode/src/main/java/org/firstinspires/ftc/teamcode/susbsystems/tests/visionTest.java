@@ -3,11 +3,13 @@ package org.firstinspires.ftc.teamcode.susbsystems.tests;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.susbsystems.Vision725;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagPoseFtc;
+import org.firstinspires.ftc.vision.apriltag.AprilTagPoseRaw;
 
 import java.util.ArrayList;
 
@@ -15,6 +17,9 @@ import java.util.ArrayList;
 public class visionTest extends OpMode {
     Vision725 vision;
     ButtonBlock toggleAvg, toggleUFD;
+    Position tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
+    Position detTagPose = new Position(DistanceUnit.INCH,0,0,0,0);
+
     boolean averaging = false;
     @Override
     public void init() {
@@ -35,25 +40,42 @@ public class visionTest extends OpMode {
             for (AprilTagDetection detection : detections) {
                 if (detection == null || detection.robotPose == null || detection.robotPose.getPosition() == null) continue;
                 Position detPose = detection.robotPose.getPosition();
-                telemetry.addLine(String.format("id: %03d x: %.2f y: %.2f z: %.2f", detection.id, detPose.x, detPose.y, detPose.z) );
+                telemetry.addLine(String.format("Robot id: %03d x: %.2f y: %.2f z: %.2f", detection.id, detPose.x, detPose.y, detPose.z) );
+                AprilTagPoseFtc tagdetPose = detection.ftcPose;
+                telemetry.addLine(String.format("FTC id: %03d x: %.2f y: %.2f z: %.2f", detection.id, tagdetPose.x, tagdetPose.y, tagdetPose.z) );
+                tagLocation.z = detection.ftcPose.z;
+                tagLocation.x = -detection.ftcPose.y;
+                tagLocation.y = detection.ftcPose.x;
+                telemetry.addLine(String.format("FTC-Corrected id: %03d x: %.2f y: %.2f z: %.2f", detection.id, tagLocation.x, tagLocation.y, tagLocation.z) );
+                AprilTagPoseRaw rawdetpose = detection.rawPose;
+                telemetry.addLine(String.format("Raw id: %03d x: %.2f y: %.2f z: %.2f", detection.id, rawdetpose.x, rawdetpose.y, rawdetpose.z) );
             }
+       /* ArrayList<AprilTagDetection> freshDetections = vision.GetFreshDetections();
+        if (freshDetections != null)
+            for (AprilTagDetection detection : freshDetections) {
+                if (detection == null || detection.robotPose == null || detection.robotPose.getPosition() == null) continue;
+                Position detPose = detection.robotPose.getPosition();
+                telemetry.addLine(String.format("Fresh id: %03d x: %.2f y: %.2f z: %.2f", detection.id, detPose.x, detPose.y, detPose.z) );
+            }*/
 
         telemetry.addLine("Gamepad1 A: Toggle Avg B: Toggle Fresh");
         telemetry.addData("Target Tag Id", vision.GetTargetID());
         telemetry.addData("Averaging Data Set Size",vision.DetectionsForAvgCount());
         telemetry.addData("Averaging",averaging);
         telemetry.addData("UsingFreshDetections",vision.IsUsingFreshDetections());
-        if (vision.GetAverageDetection() != null) {
+        /*if (vision.GetAverageDetection() != null) {
             Position avgPose = vision.GetAverageDetection().robotPose.getPosition();
             telemetry.addData("Average Tag", String.format("x: %.2f y: %.2f z: %.2f", avgPose.x, avgPose.y, avgPose.z) );
         }
-        if(vision.GetPosition() != null){
-            Position detPose = vision.GetPosition();
-            telemetry.addLine(String.format("[Corrected]x: %.2f y: %.2f z: %.2f", detPose.x, detPose.y, detPose.z) );
+        detTagPose = vision.GetPos();
+        if(vision.GetPos() != null){
+            telemetry.addLine(String.format("[Corrected]x: %.2f y: %.2f z: %.2f", detTagPose.x, detTagPose.y, detTagPose.z) );
         }
         else {
             telemetry.addLine("Null Tag Position");
-        }
+        }*/
+        detTagPose = vision.GetPos();
+        telemetry.addLine(String.format("[TAG] Detected %b x: %.2f y: %.2f z: %.2f", vision.isTagDetected(),tagLocation.x, tagLocation.y, tagLocation.z) );
         telemetry.update();
     }
     private void toggleAvg() {

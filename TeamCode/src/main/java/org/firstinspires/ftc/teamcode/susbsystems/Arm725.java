@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.susbsystems;
 
+import static org.firstinspires.ftc.teamcode.Constants.SHOULDER_MAX_HEIGHT;
+import static org.firstinspires.ftc.teamcode.Constants.SHOULDER_MIN_HEIGHT;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -42,8 +45,7 @@ public class Arm725 {
     //Shoulder Constants
     private static final double DEG_TO_TICKS = 11.05;
     private static final double SHOULDER_RADIUS = 19;
-    private static final double SHOULDER_MAX_HEIGHT = 13;
-    private static final double SHOULDER_MIN_HEIGHT = -17;
+
 
     //Shoulder private variables
     private DcMotorEx motor;

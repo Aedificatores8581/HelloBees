@@ -175,7 +175,7 @@ public class Turret725 {
         setAngle();
         this.currentxyzPosition = new Position(DistanceUnit.INCH,TURRET_LENGTH * Math.cos(currentAngleRAD),TURRET_LENGTH * Math.sin(currentAngleRAD),0,System.nanoTime());
 
-        if (currentPosition >= Constants.TURRET_MAX_POSITION) homed = true;
+        homed = currentPosition >= Constants.TURRET_MAX_POSITION-TURRET_ERROR;
         if (isHoming && homed) {Stop();}
 
         if(isBusy && ((Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR))){Stop();};
