@@ -86,6 +86,13 @@ public class Arm725 {
         motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         currentPower = 1;
     }
+    public void GoToEncoderPosition(int ticks) {
+        targetPosition = ticks;
+        shoulder_is_busy = true;
+        motor.setTargetPosition(ticks);
+        motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        currentPower = 1;
+    }
     public double GetPos() {return currentPosition / DEG_TO_TICKS;}
     public double GetHeight() {
         double temp;

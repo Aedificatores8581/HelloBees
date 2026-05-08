@@ -43,6 +43,7 @@ public class Wrist {
     private double targetHeight = 0;
     private static ElapsedTime wristStopwatch = new ElapsedTime();
     private double currentAngle;
+    private double calcPosition = -1;
 
     public Wrist(HardwareMap hm) {
         init(hm);
@@ -110,6 +111,7 @@ public class Wrist {
     public double GetA() {return A;}
     public double GetB() {return B;}
     public double GetC() {return C;}
+    public double GetCalcPos(){return calcPosition;}
     public boolean IsBusy() {return wrist_is_busy;}
 
     public void SetPos(double power) {
@@ -117,6 +119,18 @@ public class Wrist {
         //safety checks
         power = Math.min(Math.max(power, WRIST_MIN_POSITION), WRIST_MAX_POSITION);
         wrist_servo.setPosition(power);
+    }
+    public void SetTargetPos(double power) {
+        wrist_is_busy = true;
+        wristStopwatch.reset();
+        //safety checks
+        power = Math.min(Math.max(power, WRIST_MIN_POSITION), WRIST_MAX_POSITION);
+        wrist_servo.setPosition(power);
+    }
+    public void SetLevel(double shoulder_angle){
+        //math from hadley that he indicates will calculate the correct servo positon
+        calcPosition = -.004*(Math.pow(shoulder_angle,2))-(1.194*shoulder_angle)+205.84;
+        GoToAngle(calcPosition);
     }
     public void Stop() {
         wrist_is_busy = false;
@@ -126,11 +140,7 @@ public class Wrist {
         currentServoPosition = wrist_servo.getPosition();
         currentWristServoAngle = GetServoAngle();
         currentAngle = GetAngle();
-        if (wrist_is_busy && wristStopwatch.milliseconds() > 300) {
-            wrist_is_busy = false;
-        } else if (!wrist_is_busy) {
-            wristStopwatch.reset();
-        }
+        if (wrist_is_busy && wristStopwatch.milliseconds() > 300) {wrist_is_busy = false;}
     }
 }
 

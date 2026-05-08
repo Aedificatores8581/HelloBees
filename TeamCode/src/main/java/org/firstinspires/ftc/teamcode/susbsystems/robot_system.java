@@ -6,10 +6,14 @@ import static org.firstinspires.ftc.teamcode.Constants.SHOULDER_MIN_HEIGHT;
 import static org.firstinspires.ftc.teamcode.Constants.TAG_ID_1_Y_MAX;
 import static org.firstinspires.ftc.teamcode.Constants.TAG_ID_1_Y_MIN;
 import static org.firstinspires.ftc.teamcode.Constants.TAG_ID_1_Z_OFFSET;
+import static org.firstinspires.ftc.teamcode.Constants.TURRENT_OFFSET_135_X_Y;
+import static org.firstinspires.ftc.teamcode.Constants.TURRENT_OFFSET_180_X_Y;
 import static org.firstinspires.ftc.teamcode.Constants.TURRENT_OFFSET_225_X_Y;
 import static org.firstinspires.ftc.teamcode.Constants.TURRENT_OFFSET_45_X_Y;
 import static org.firstinspires.ftc.teamcode.Constants.TURRENT_OFFSET_90_X_Y;
 import static org.firstinspires.ftc.teamcode.Constants.TURRENT_TO_CAMERA;
+import static org.firstinspires.ftc.teamcode.Constants.WRIST_X_OFFSET;
+import static org.firstinspires.ftc.teamcode.Constants.WRIST_Z_OFFSET;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -53,6 +57,7 @@ public class robot_system {
 
     //ready to treat
     boolean isReadyToTreat = false;
+    boolean armLocationLogicImprovement = false;
 
     //fog cycle
     //****************************************************************************************************************************
@@ -93,7 +98,8 @@ public class robot_system {
     private boolean arm_homed = false;
     private boolean arm_last_position_bad = false;
     //buttons
-
+    // extension info
+    private double extension_target = 0;
     //local variables
     int runForTime = 0; //seconds
     int runForTicks = 0; //encoder ticks
@@ -144,7 +150,7 @@ public class robot_system {
         tagLocation = vision.GetPos();
         tagDetected = vision.isTagDetected();
         tagID = vision.getTagID();
-        isReadyToTreat = tagToArmTest();
+        if(arm_homed){isReadyToTreat = tagToArmTest();}
     }
 
     public void robot_drive(double power, double steering) {
@@ -242,7 +248,7 @@ public class robot_system {
         // y, x, z 0,0,0 is camera zip tied to robot frame
         arm_position.z = shoulder.GetHeight() + TURRENT_TO_CAMERA.z; //7.5 is the height of shoulder rotation above the camera
         arm_position.y = turret.getPosition().y + TURRENT_TO_CAMERA.y; //4.5 is how far the end of the arm is in front of the camera
-        arm_position.x = -(extension.GetPos() + shoulder.getExtension() - turret.getPosition().x)+TURRENT_TO_CAMERA.x; // -8 for camera adjustment
+        arm_position.x = -(extension.GetPos() + shoulder.getExtension() - turret.getPosition().x)+TURRENT_TO_CAMERA.x+10; // -8 for camera adjustment added 10 for no clear reason
         if (arm_automation) {
             if (!shoulder.IsBusy() && !turret.IsBusy() && !extension.IsBusy() && arm_state == 0) {
                 arm_automation = false;
@@ -340,7 +346,7 @@ public class robot_system {
             if (arm_state == 1 &&!turret.IsBusy()) {
                 arm_state = 2;
                 extension.GoTo(2);
-                wrist.SetPos(.9);
+                wrist.SetTargetPos(.9);
             }
             if (arm_state == 2 && !extension.IsBusy()) {
                 arm_state = 3;
@@ -348,12 +354,13 @@ public class robot_system {
             }
             if (arm_state == 3 && !shoulder.IsBusy()) {
                 arm_state = 4;
-                wrist.SetPos(.55);
-                extension.GoTo(extension.GetPos() + Math.abs(Math.abs(arm_position.x) - Math.abs(target_position.x)) - TURRENT_TO_CAMERA.x);
+                //wrist.SetLevel(shoulder.GetPos());
+                wrist.SetTargetPos(.55);
             }
-            if (arm_state == 4 && !extension.IsBusy()) {
+            if (arm_state == 4 && !wrist.IsBusy()) {
                 arm_state = 5;
-                extension.GoTo(extension.GetPos() + 1);
+                extension_target = Math.abs(target_position.x)-(Math.abs(WRIST_X_OFFSET)+Math.abs(arm_position.x)+1);
+                extension.GoTo(extension_target);
             }
             if (arm_state == 5 && !extension.IsBusy()) {
                 arm_state = 0;
@@ -363,7 +370,7 @@ public class robot_system {
         else if(!arm_is_busy && arm_homing){
             if (arm_state == 1 &&!extension.IsBusy()) {
                 arm_state = 2;
-                shoulder.GoToAngle(0);
+                shoulder.GoToEncoderPosition(0);
             }
             if (arm_state == 2 && !shoulder.IsBusy()) {
                 arm_state = 3;
@@ -397,6 +404,7 @@ public class robot_system {
 
     public boolean shoulderIsBusy() {return shoulder.IsBusy();}
     public double shoulderHeight(){return shoulder.GetHeight();}
+    public double shoulderLength(){return shoulder.getExtension();}
     public double shoulderRaw(){return shoulder.GetRawPos();}
     public boolean shoulderIsHomed(){
         return shoulder.GetRawPos() < 25 && shoulder.GetRawPos() > -25;
@@ -441,6 +449,7 @@ public class robot_system {
     //**************************************************************************************
     //**************************************************************************************
     public double getExtensionTarget() {return extension.GetTargetPos();}
+    public double getExtensionLocal_target(){return extension_target;}
 
     public boolean isBusyExtension() {return extension.IsBusy();}
     public void moveExtensionManual(double power) {
@@ -456,6 +465,7 @@ public class robot_system {
     //**************************************************************************************
     public double getWristHeight() {return wrist.GetHeight();}
     public double getWristLength() {return wrist.GetLength();}
+    public double getWristCalc() {return wrist.GetCalcPos();}
 
     public void moveWristManual(double power) {
         if(!wrist.IsBusy()){
@@ -464,7 +474,7 @@ public class robot_system {
         }
     }
     public void wristGoPos(double position){
-        wrist.SetPos(position);
+        wrist.SetTargetPos(position);
     }
 
     //armToPosition and Spray
@@ -522,32 +532,72 @@ public class robot_system {
 
     // overall function info
     public boolean isReadyToTreat(){return isReadyToTreat;}
+    public boolean isArmLocationLogicImprovement(){return armLocationLogicImprovement;}
+    public double getTarget_degrees(){return target_degrees;}
 
     public void startTreatment(){
         if(isReadyToTreat){
             //target_position = vision.GetPos();
-            arm_last_position_bad = init_armToPosition(target_position, target_degrees);
+            //arm_last_position_bad = init_armToPosition(target_position, target_degrees);
+            startFullCycle(target_position);
         }
     }
     private boolean tagToArmTest(){
         boolean ready = false;
         //tag ID 1 is left
         if(tagID ==1 && arm_homed) {
-            double wrist_length = -7.338;
-            target_position.z = tagLocation.z + TAG_ID_1_Z_OFFSET;
-            if(target_position.z > SHOULDER_MAX_HEIGHT || target_position.z < SHOULDER_MIN_HEIGHT) return ready;
-            //if(target_position.y > ())
-            if(tagLocation.y >TURRENT_OFFSET_90_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX) return ready;
-            if(tagLocation.y<TURRENT_OFFSET_225_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MIN) return ready;
-            if(tagLocation.x <TURRENT_TO_CAMERA.x+wrist_length+TURRENT_OFFSET_45_X_Y.x-4) return ready;//wrist length of 7.33 extra extension room to move into hive
-            x_target_offset = 10;
-            target_position.x = tagLocation.x + x_target_offset;
-            y_target_offset = 0;
-            target_position.y = tagLocation.y + y_target_offset;
-            if (target_position.x < -20 && target_position.x > -45
-                    && target_position.y < 15 && target_position.y > -5) {
-                ready = true;
+            //target_position = tagLocation;
+            target_position.z = tagLocation.z + TAG_ID_1_Z_OFFSET - WRIST_Z_OFFSET;
+            if(target_position.z > SHOULDER_MAX_HEIGHT || target_position.z < SHOULDER_MIN_HEIGHT) {
+                target_position.z = 0;
+                return ready;
             }
+            if(tagLocation.y >TURRENT_OFFSET_90_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX) {
+                target_position.y = 0;
+                return ready;
+            }
+            if(tagLocation.y<TURRENT_OFFSET_225_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MIN) {
+                target_position.y =0;
+                return ready;
+            }
+            target_position.y = tagLocation.y;
+            if(tagLocation.x > -30 ) {
+                target_position.x = 0;
+                return ready;
+            }
+            if(tagLocation.x < -44) {
+                target_position.x = 0;
+                return ready;
+            }
+            target_position.x = tagLocation.x;
+            armLocationLogicImprovement = false;
+            //if it gets here then it should work or I have my bounds checking wrong.
+            if(tagLocation.y < TURRENT_OFFSET_90_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX && tagLocation.y > TURRENT_OFFSET_135_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX){
+                ready = true;
+                target_degrees = 90;
+                target_position.y = TURRENT_OFFSET_90_X_Y.y+TURRENT_TO_CAMERA.y;
+                target_position.x = tagLocation.x+2;
+            }
+            if(tagLocation.y < TAG_ID_1_Y_MAX+TURRENT_TO_CAMERA.y && tagLocation.y > TAG_ID_1_Y_MIN+TURRENT_TO_CAMERA.y && tagLocation.x <TURRENT_TO_CAMERA.x + TURRENT_OFFSET_180_X_Y.x){
+                ready = true;
+                target_degrees = 180;
+                target_position.y = TURRENT_OFFSET_180_X_Y.y+TURRENT_TO_CAMERA.y;
+                target_position.x = tagLocation.x+2;
+            }
+            if(tagLocation.y < TURRENT_OFFSET_135_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX && tagLocation.y > TURRENT_OFFSET_180_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX){
+                ready = true;
+                target_degrees = 135;
+                //target_position.z = target_position.z +3;  //adjust for arm drop or something
+                target_position.y = TURRENT_OFFSET_135_X_Y.y+TURRENT_TO_CAMERA.y;
+                target_position.x = tagLocation.x+2;
+            }
+            if(tagLocation.y < TURRENT_OFFSET_180_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX && tagLocation.y > TURRENT_OFFSET_225_X_Y.y+TURRENT_TO_CAMERA.y+TAG_ID_1_Y_MAX){
+                ready = true;
+                target_degrees = 225;
+                target_position.y = TURRENT_OFFSET_135_X_Y.y+TURRENT_TO_CAMERA.y;
+                target_position.x = tagLocation.x+2;
+            }
+            if(!ready) armLocationLogicImprovement = true;
         }
         return ready;
     }
