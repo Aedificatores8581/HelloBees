@@ -16,13 +16,22 @@ public class Hello_Bees_Demo3 extends OpMode {
     ButtonBlock stopArm, startFogCycle, stopFogCycle, startTreatment;
     ButtonBlock stopShoulder,shoulderHome;
     ButtonBlock stopHomeShoulder, homeArm, startStopFogCycle;
+    ButtonBlock stopAll,toggle_arm_full;
     ButtonBlock dpadUp, dpadDown, dpadLeft, dpadRight;
+    ButtonBlock leftbumper, rightbumper;
+    boolean arm_full_toggle = true;
     int yPosTarget = 0;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new robot_system(hardwareMap);
+        toggle_arm_full = new ButtonBlock().onTrue(() -> {arm_full_toggle = !arm_full_toggle;});
+        stopAll = new ButtonBlock()
+                .onTrue(() -> {
+                    robot.stopArmToPosition();
+                    robot.startFogCycle();
+                });
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
 
@@ -46,7 +55,13 @@ public class Hello_Bees_Demo3 extends OpMode {
                 .onTrue(()-> {
                     robot.armHome();});
         startTreatment = new ButtonBlock()
-                .onTrue(()->{robot.startTreatment();});
+                .onTrue(()->{robot.startTreatment(arm_full_toggle);});
+        dpadUp = new ButtonBlock().onTrue(() -> {robot.setCyclecount((robot.getCycleTarget()+1));});
+        dpadDown = new ButtonBlock().onTrue(() -> {robot.setCyclecount((robot.getCycleTarget()-1));});
+        dpadLeft = new ButtonBlock().onTrue(() -> {robot.setFogTime((robot.getFogTime()+1));});
+        dpadRight = new ButtonBlock().onTrue(() -> {robot.setFogTime((robot.getFogTime()-1));});
+        leftbumper = new ButtonBlock().onTrue(() -> {robot.setFanTime((robot.getFanTime()+1));});
+        rightbumper = new ButtonBlock().onTrue(() -> {robot.setFanTime((robot.getFanTime()-1));});
         robot.wristGoPos(.9);
         telemetry.addLine("Initialized");
         telemetry.update();
@@ -73,35 +88,53 @@ public class Hello_Bees_Demo3 extends OpMode {
     private void buttonEvents() {
         // Simplified down all into classes that handle button blocks the same way that a normal one does
 
-        startStopFogCycle.update(gamepad1.b);
-        stopArm.update(gamepad1.a);
+        //startStopFogCycle.update(gamepad1.b);
+        stopAll.update(gamepad1.a);
         shoulderHome.update(gamepad2.b);
         homeArm.update(gamepad1.x);
         startTreatment.update(gamepad1.y);
+        toggle_arm_full.update(gamepad1.b);
+        dpadUp.update(gamepad1.dpad_up);
+        dpadDown.update(gamepad1.dpad_down);
+        dpadLeft.update(gamepad1.dpad_left);
+        dpadRight.update(gamepad1.dpad_right);
+        leftbumper.update(gamepad1.left_bumper);
+        rightbumper.update(gamepad1.right_bumper);
     }
 
     @Override
     public void stop() {
     }
     private void telemetry() {
-        telemetry.addLine("  Controls Guide:");
-        telemetry.addLine("(A:Stop Arm To Pos) (B:Start/Stop Fog)");
-        telemetry.addLine("(X:Home Arm) (Y:Start Treatment)");
-        telemetry.addData("[Ready] Treat: ",robot.isReadyToTreat()+" Arm: "+robot.isArmHomed()+" Imp: "+robot.isArmLocationLogicImprovement());
-         telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
+        if(arm_full_toggle&& robot.isReadyToTreat()&&robot.isArm_ready()&&robot.isArmHomed()){
+            telemetry.addLine("****** READY FULL CYCLE  ******");
+        }
+        else if(!arm_full_toggle && robot.isReadyToTreat()&&robot.isArm_ready()&&robot.isArmHomed())
+        {
+            telemetry.addLine("****** READY Move Arm ONLY ******");
+        }
         telemetry.addLine("Telemetry: (Arm)");
-        telemetry.addData("Position:"," (X) %.1f (Y) %.1f (Z) %.1f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
-        telemetry.addData("Target:"," (X) %.1f (Y) %.1f (Z) %.1f (d) %.1f (e) %.1f", robot.getTarget_position().x,robot.getTarget_position().y,robot.getTarget_position().z,robot.getTarget_degrees(),robot.getExtensionLocal_target());
-        telemetry.addData("Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready());
-        telemetry.addData("Homed: (Yes/No)", robot.isArmHomed()+" (Busy) "+robot.isArmBusy()+" BadPos: "+robot.isArm_last_position_bad());
-        telemetry.addData("Wrist: H:","%.1f L:%.1f C:%.2f",robot.getWristHeight(),robot.getWristLength(),robot.getWristCalc());
-        telemetry.addData("Shoulder: H:","%.1f, L:%.1f Raw:%.2f",robot.shoulderHeight(),robot.shoulderLength(),robot.shoulderRaw());
+        telemetry.addData("Auto: (Yes/No)", robot.isArm_automation()+" (Arm State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready()+" (Full State) "+robot.getFullCycleState());
+        telemetry.addData("[Arm]Position:"," (X) %.1f (Y) %.1f (Z) %.1f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
+        telemetry.addData("[Arm]Target:"," (X) %.1f (Y) %.1f (Z) %.1f (d) %.1f (e) %.1f", robot.getTarget_position().x,robot.getTarget_position().y,robot.getTarget_position().z,robot.getTarget_degrees(),robot.getExtensionLocal_target());
+        telemetry.addData("[Arm]Homed: (Yes/No)", robot.isArmHomed()+" (Busy) "+robot.isArmBusy()+" BadPos: "+robot.isArm_last_position_bad());
+        telemetry.addData("[Wrist] H:","%.1f L:%.1f C:%.2f",robot.getWristHeight(),robot.getWristLength(),robot.getWristCalc());
+        telemetry.addData("[Shoulder] H:","%.1f, L:%.1f Raw:%.2f",robot.shoulderHeight(),robot.shoulderLength(),robot.shoulderRaw());
         telemetry.addLine(String.format("[TAG] Detected %b x: %.2f y: %.2f z: %.2f", robot.isTagDetected(),robot.getTagLocation().x, robot.getTagLocation().y, robot.getTagLocation().z) );
-        telemetry.addLine(String.format("[Homed] Shoulder %b Turret: %b Extension: %b", robot.shoulderIsHomed(),robot.turretIsHomed(),robot.isExtensionHome()) );
+        telemetry.addLine(String.format("[Arm](Homed) Shoulder %b Turret: %b Ext: %b", robot.shoulderIsHomed(),robot.turretIsHomed(),robot.isExtensionHome()) );
+        telemetry.addLine(String.format("[Arm](Busy) Sho: %b Tur: %b Ext: %b Wrst: %b Arm: %b ", robot.shoulderIsBusy(),robot.turretIsBusy(),robot.isBusyExtension(), robot.isWristBusy(),robot.isArmBusy()) );
+        telemetry.addLine(String.format("[Fog]  %b Count: %d Target: %d", robot.isCycling(),robot.getCyclecount(), robot.getCycleTarget()) );
+        telemetry.addLine(String.format("[Fog] Fan: %.0f Fog: %.0f Pump: %.0f", robot.getFanTime(),robot.getFogTime(), robot.getPumpTime()) );
+        telemetry.addData("[Ready] Treat: ",robot.isReadyToTreat()+" Arm: "+robot.isArmHomed()+" Imp: "+robot.isArmLocationLogicImprovement());
+        telemetry.addLine("  Controls Guide: Gamepad1");
+        telemetry.addLine("(A:Stop) (B:Full/Arm Toggle)");
+        telemetry.addLine("(X:Home Arm) (Y:Start Treatment)");
+        telemetry.addLine("(Dpad Up/Down: Cycle Count) (Dpad Left + Right- [Fog Time])");
+        telemetry.addLine("(Bumpers Buttons L+ R-: Fan Time)");
         telemetry.addLine("  Controls Guide: Gamepad2");
         telemetry.addLine("Left Stick Y: Extension  Right Stick Y: Shoulder");
         telemetry.addLine("Dpad Up/Down: Wrist  Triggers: Turret");
-        telemetry.addLine("(A:Stop Arm To Pos) (B:Home Shoulder)");
+        telemetry.addLine("(B:Home Shoulder)");
 
 
         telemetry.update();

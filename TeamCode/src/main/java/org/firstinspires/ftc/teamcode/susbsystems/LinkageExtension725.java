@@ -107,11 +107,13 @@ public class LinkageExtension725 {
 
         atHome = !backLimitSwitch.getState();
         currentPosition = motor.getCurrentPosition();
-        if (atHome) homed = true;
-	    if (isHoming && homed) {Stop(); ResetEncoder(); }
+        if (atHome) {
+            homed = true;
+        }
+	    if (isHoming && atHome) {Stop(); ResetEncoder(); }
 
         if (isBusy) {
-            if (isHoming && !homed) {
+            if (isHoming && !atHome) {
                     currentPower = homePower;
                     if (homeTime.seconds() > 3) StartHome();
             } else {

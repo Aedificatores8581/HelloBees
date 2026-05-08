@@ -62,10 +62,11 @@ public class robot_system {
     //fog cycle
     //****************************************************************************************************************************
     //****************************************************************************************************************************
-    //fog Cycle Constants
-    private static final double PUMP_TIME = 5;
-    private static final double FOG_TIME = 2;
-    private static final double FAN_TIME = .5;
+    //fog Cycle variables
+    private double pumpTime = 5;
+    private double fogTime = 2;
+    private double fanTime = 1;
+    private int cycleTarget = 10;
 
     //fog cycle variables
     //********************
@@ -202,39 +203,54 @@ public class robot_system {
     }
 
     private void cycle() {
-        if (pumpRunTime.seconds() > PUMP_TIME) {
+        if (pumpRunTime.seconds() > pumpTime) {
             pump.TurnOff();
         }
-        if (cyclecount == 0 && fogRunTime.seconds() > FOG_TIME) {
+        if (cyclecount == 0 && fogRunTime.seconds() > fogTime) {
             fanRunTime.reset();
             fan.TurnOn();
             cyclecount++;
         }
-        if (fanRunTime.seconds() > FAN_TIME) {
+        if (fanRunTime.seconds() > fanTime) {
             fan.ToggleState();
             fanRunTime.reset();
         }
         if (cyclecount > 0) {
-            if (fogRunTime.seconds() > FOG_TIME) {
+            if (fogRunTime.seconds() > fogTime) {
                 fogger.ToggleState();
                 fogRunTime.reset();
                 cyclecount++;
             }
         }
-        if (cyclecount > 16) {
+        if (cyclecount > cycleTarget) {
             pump.TurnOff();
             fan.TurnOff();
             cycling = false;
         }
     }
 
-    public int getCyclecount() {
-        return cyclecount;
-    }
-
-    public boolean isCycling() {
-        return cycling;
-    }
+    public int getCyclecount() {return cyclecount;}
+    public boolean isCycling() {return cycling;}
+    public double getFogTime(){return fogTime;}
+    public double getFanTime(){return fanTime;}
+    public double getPumpTime(){return pumpTime;}
+    public int getCycleTarget(){return cycleTarget;}
+    public void setPumpTime(double pump){
+        if (pump < 1) pump = 1;
+        if (pump > 20) pump = 20;
+        pumpTime = pump;}
+    public void setFanTime(double fan){
+        if (fan <1) fan = 1;
+        if (fan > 10) fan = 10;
+        fanTime = fan;}
+    public void setFogTime(double fog){
+        if (fog <1) fog = 1;
+        if (fog > 10) fog = 10;
+        fogTime = fog;}
+    public void setCyclecount(int count){
+        if (count < 5) count = 5;
+        if (count > 30) count = 30;
+        cycleTarget = count;}
 
     //code used for the move arm to point in space
     //************************************
@@ -296,7 +312,7 @@ public class robot_system {
         if(arm_ready && !arm_is_busy) {
             arm_automation = true;
             arm_homing = true;
-            extension.GoTo(0);
+            extension.StartHome();
             wrist.SetPos(.9);
             arm_state = 1;
         }
@@ -371,6 +387,7 @@ public class robot_system {
             if (arm_state == 1 &&!extension.IsBusy()) {
                 arm_state = 2;
                 shoulder.GoToEncoderPosition(0);
+                shoulder.Update();
             }
             if (arm_state == 2 && !shoulder.IsBusy()) {
                 arm_state = 3;
@@ -466,6 +483,7 @@ public class robot_system {
     public double getWristHeight() {return wrist.GetHeight();}
     public double getWristLength() {return wrist.GetLength();}
     public double getWristCalc() {return wrist.GetCalcPos();}
+    public boolean isWristBusy() {return wrist.IsBusy();}
 
     public void moveWristManual(double power) {
         if(!wrist.IsBusy()){
@@ -483,7 +501,7 @@ public class robot_system {
 
 
     public void startFullCycle(Position target){
-        if(arm_ready){
+        if(arm_ready && arm_homed){
             fullCycleAutomation = true;
             fullCycleState = 1;
             arm_last_position_bad = init_armToPosition(target,target_degrees);
@@ -505,20 +523,7 @@ public class robot_system {
             fullCycleState++;
             init_armToHome();
         }
-        if(fullCycleState == 3 && !arm_automation){
-            fullCycleState = 4;
-            target_position.y = 7;
-            arm_last_position_bad =init_armToPosition(target_position,target_degrees);
-        }
-        if(fullCycleState == 4 && !arm_automation){
-            fullCycleState++;
-            init_cycle();
-        }
-        if(fullCycleState == 5 && !cycling){
-            fullCycleState++;
-            init_armToHome();
-        }
-        if(fullCycleState ==6 && !arm_automation){
+        if(fullCycleState ==3 && !arm_automation){
             fullCycleState = 0;
             fullCycleAutomation = false;
         }
@@ -535,11 +540,14 @@ public class robot_system {
     public boolean isArmLocationLogicImprovement(){return armLocationLogicImprovement;}
     public double getTarget_degrees(){return target_degrees;}
 
-    public void startTreatment(){
-        if(isReadyToTreat){
+    public void startTreatment(boolean arm_or_treat){
+        if(isReadyToTreat&&arm_homed){
             //target_position = vision.GetPos();
-            //arm_last_position_bad = init_armToPosition(target_position, target_degrees);
-            startFullCycle(target_position);
+            if(arm_or_treat)
+                startFullCycle(target_position);
+            else
+                arm_last_position_bad = init_armToPosition(target_position, target_degrees);
+
         }
     }
     private boolean tagToArmTest(){
