@@ -21,7 +21,7 @@ public class Pump_Subsystem { // Working but Could be Missing Some Needed Functi
     private boolean usingRunToPosition = false;
     private boolean usingRunToTime = false;
     private boolean locked;
-    private boolean direction = true; //forward is positive and back = false
+    private boolean direction = false; //forward is positive and back = false
     public Pump_Subsystem(HardwareMap hm, String deviceName) {
         motor = hm.get(DcMotorEx.class, deviceName);
         motor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);

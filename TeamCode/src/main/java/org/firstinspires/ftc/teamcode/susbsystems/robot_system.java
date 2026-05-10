@@ -521,6 +521,9 @@ public class robot_system {
         }
         if(fullCycleState == 2 && !cycling){
             fullCycleState++;
+            pump.TurnOff();
+            fan.TurnOff();
+            fogger.TurnOff();
             init_armToHome();
         }
         if(fullCycleState ==3 && !arm_automation){
