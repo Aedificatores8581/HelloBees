@@ -7,6 +7,8 @@ import static org.firstinspires.ftc.teamcode.util.Util.avPoint;
 
 import android.util.Size;
 
+import org.firstinspires.ftc.teamcode.util.VisionFilter;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -38,7 +40,8 @@ public class Vision725 {
     ArrayList<AprilTagDetection> freshDetections;
     ArrayList<AprilTagDetection> detectionsForAvg;
     private Position tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
-    final int width = 640, height = 480;
+    // final int width = 640, height = 480;
+    final int width = 1280, height = 800;
     private boolean gettingAvg = false;
     private int avgPasses;
     private int targetId = -1;
@@ -49,58 +52,74 @@ public class Vision725 {
     private Position cameraPosition = new Position(DistanceUnit.INCH,0, 0, 0, 0);
     private YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,-90, -90, 0, 0);
     private static ElapsedTime visionTimer = new ElapsedTime();
+    private VisionFilter positionFilter; // Smooth AprilTag readings to reduce noise
 
     public Vision725(HardwareMap hm) {
         webcam = hm.get(WebcamName.class, "Webcam 1");
         processor = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraPosition, cameraOrientation)
                 .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
-                //.setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
-                //.setLensIntrinsics(907.659, 907.659, 659.985, 357.874) // For Global Shutter Camera
-                .setTagFamily(AprilTagProcessor.TagFamily.TAG_25h9)
-                .setTagLibrary(
-                        new AprilTagLibrary.Builder()
-                                .addTag(0,"beeHiveTag",1.93,DistanceUnit.INCH)
-                                .addTag(1,"beeHiveTag",1.93,DistanceUnit.INCH)
-                                .build()
-                )
+                .setLensIntrinsics(930.544, 930.544, 659.753, 388.114)
+                .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 .build();
+        // processor = new AprilTagProcessor.Builder()
+        //         .setCameraPose(cameraPosition, cameraOrientation)
+        //         .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
+        //         //.setLensIntrinsics(821.993f, 821.993f, 330.489f, 248.997f) // For Logitech C310 Camera, Should be Default
+        //         //.setLensIntrinsics(907.659, 907.659, 659.985, 357.874) // For Global Shutter Camera
+        //         .setTagFamily(AprilTagProcessor.TagFamily.TAG_25h9)
+        //         .setTagLibrary(
+        //                 new AprilTagLibrary.Builder()
+        //                         .addTag(0,"beeHiveTag",77.8,DistanceUnit.MM)
+        //                         .addTag(1,"beeHiveTag",77.8,DistanceUnit.MM)
+        //                         .build()
+        //         )
+        //         .build();
         // For Intrinsics refer to TeamCode/src/main/res/xml/teamwebcamcalibrations.xml
         VisionPortal.Builder builder = new VisionPortal.Builder();
         builder.setCamera(webcam);
         builder.setCameraResolution(new Size(width,height));
+        builder.setStreamFormat(VisionPortal.StreamFormat.MJPEG);
         processor.setDecimation(1);
         builder.addProcessor(processor);
         portal = builder.build();
         visionTimer.reset();
+        positionFilter = new VisionFilter(8); // Buffer size of 8 readings for moving average
     }
     public void Update() {
         if(visionTimer.milliseconds()>150){
             visionTimer.reset();
             detections = processor.getDetections();
             freshDetections = processor.getFreshDetections();
-            if(freshDetections != null){
-            if(freshDetections.isEmpty())
-            {
-                tagLocation = new Position(DistanceUnit.INCH,0, 0, 0, 0);
-            }
-            else
-            {
-            for (AprilTagDetection detection : freshDetections) {
-                if (detection.metadata != null){
-                    tagLocation.z = detection.ftcPose.z;
-                    tagLocation.x = -detection.ftcPose.y;
-                    tagLocation.y = detection.ftcPose.x;
-                    tagID = detection.id;
+            boolean validTagThisUpdate = false;
+            if(detections != null && !detections.isEmpty()){
+                for (AprilTagDetection detection : detections) {
+                    if (detection.metadata != null && detection.ftcPose != null){
+                        Position reading = new Position(
+                                DistanceUnit.INCH,
+                                -detection.ftcPose.y,
+                                -detection.ftcPose.x,
+                                detection.ftcPose.z,
+                                System.nanoTime());
+
+                        // The filter keeps only the last 8 valid non-zero readings.
+                        // Missed frames should not reset the target to (0,0,0).
+                        positionFilter.addReading(reading);
+                        if (positionFilter.hasData()) {
+                            tagLocation = positionFilter.getFilteredReading();
+                        }
+                        tagID = detection.id;
+                        validTagThisUpdate = true;
+                        break;
+                    }
                 }
             }
-            }
-            } else
-            {
-                tagLocation = new Position(DistanceUnit.INCH,0, 0, 0, 0);
+            if (!validTagThisUpdate) {
                 tagID = -1;
+                // Keep the last averaged target. Do not clear the buffer here,
+                // because the next valid tag reading should continue the average.
             }
-            isTagDetected = tagLocation.x != 0;
+            isTagDetected = validTagThisUpdate;
         }
     }
     public void UsingFreshDetections(boolean bool) {usingFreshDetections=bool;} // Fresh Detections are as implied new detections which are used to prevent re-using the same detection data
@@ -129,6 +148,23 @@ public class Vision725 {
     public ArrayList<AprilTagDetection> GetFreshDetections() { return freshDetections; }
 
     public Position GetPos(){return tagLocation;}
+
+    /**
+     * Get the filtered (smoothed) AprilTag position.
+     * Returns null if buffer is not yet full (startup phase).
+     * @return Smoothed Position with X, Y, Z averaged across last 8 readings
+     */
+    public Position GetFilteredPos() {
+        return positionFilter.getFilteredReading();
+    }
+
+    /**
+     * Check if filter has enough readings for reliable data.
+     * @return true when buffer is full and filtered data is valid
+     */
+    public boolean IsFilteredDataReady() {
+        return positionFilter.isBufferFull();
+    }
 
     private AprilTagDetection averageDetection(AprilTagDetection detection1, AprilTagDetection detection2) {
         Point[] avgCorners;
