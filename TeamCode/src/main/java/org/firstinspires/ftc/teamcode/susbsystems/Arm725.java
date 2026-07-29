@@ -43,13 +43,14 @@ public class Arm725 {
     public boolean AUTOSTOP = true;
   */
     //Shoulder Constants
-    private static final double DEG_TO_TICKS = 9.6; //
+    private static final double DEG_TO_TICKS = 22.7557; //
     private static final double SHOULDER_RADIUS = 21.5; // changed from 19 to 21.5 because of wrist linkage is after 2.5 inches of wrist
-    private static final int TARGET_TOLERANCE_TICKS = 5;
+    private static final int TARGET_TOLERANCE_TICKS = 15;
 
 
     //Shoulder private variables
     private DcMotorEx motor;
+    //private DcMotorEx encoder;
     private boolean shoulder_is_busy = false;
     private boolean homed = false;
     private int targetPosition = 0;
@@ -64,6 +65,7 @@ public class Arm725 {
         motor = hm.get(DcMotorEx.class, "shouldergobilda");
         motor.setDirection(DcMotorSimple.Direction.REVERSE);
         motor.setTargetPositionTolerance(TARGET_TOLERANCE_TICKS);
+        //encoder = hm.get(DcMotorEx.class,"turret");
         ResetEncoder();
     }
 

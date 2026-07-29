@@ -31,7 +31,7 @@ public class Hello_Bees_Demo3 extends OpMode {
         stopAll = new ButtonBlock()
                 .onTrue(() -> {
                     robot.stopArmToPosition();
-                    robot.startFogCycle();
+                    //robot.startFogCycle();
                 });
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
@@ -116,11 +116,11 @@ public class Hello_Bees_Demo3 extends OpMode {
         //startStopFogCycle.update(gamepad1.b);
         stopAll.update(gamepad1.a);
         shoulderHome.update(gamepad2.b);
-        homeArm.update(gamepad1.x);
-        startTreatment.update(gamepad1.y);
-        lockTarget.update(gamepad2.a);
+        homeArm.update(gamepad1.y);
+        //startTreatment.update(gamepad1.y);
+        lockTarget.update(gamepad1.x);
         lockManualTarget.update(gamepad2.y);
-        unlockTarget.update(gamepad2.x);
+        unlockTarget.update(gamepad1.y);
         toggle_arm_full.update(gamepad1.b);
         dpadUp.update(gamepad1.dpad_up);
         dpadDown.update(gamepad1.dpad_down);

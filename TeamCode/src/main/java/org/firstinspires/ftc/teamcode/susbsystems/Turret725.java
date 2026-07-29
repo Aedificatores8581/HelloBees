@@ -190,9 +190,9 @@ public class Turret725 {
                     //if (homeTime.seconds() > 3) StartHome();
             } else {
                 if(targetPosition>currentPosition)
-                    currentPower = .18;
+                    currentPower = .25;
                 else{
-                    currentPower = - .18;
+                    currentPower = -.25;
                 }
             }
         }
