@@ -235,6 +235,7 @@ public class robot_system {
         cycling = false;
         pump.TurnOff();
         fan.TurnOff();
+        fogger.TurnOff();
         cyclecount = 0;
     }
 
@@ -270,6 +271,7 @@ public class robot_system {
         if (cyclecount > cycleTarget) {
             pump.TurnOff();
             fan.TurnOff();
+            fogger.TurnOff();
             cycling = false;
         }
     }

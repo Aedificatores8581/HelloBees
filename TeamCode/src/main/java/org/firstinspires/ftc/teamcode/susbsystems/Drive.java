@@ -41,18 +41,22 @@ public class Drive { // Working but Could be Missing Some Needed Functions
         leftMotor.setPower(motorPower); rightMotor.setPower(motorPower);
     }
 
-    public void Set(double power, double steering) {
-        // If Steering is -1 Pivot around Center Left, if Steering is 1 Pivot around Center Right
-        // If Steering is -0.5 Steer Robot to left while moving forward, and vice versa for 0.5
-        // The Reason for using Steering is it will work better for correction implementation as you can use the steering input for where you would put your correction factor like yaw error for example
-        steering = Util.IntClamp(steering);
-        double leftSteering=1, rightSteering=1;
-        double calculatedSteering = -(Math.abs(steering)-0.5)*2;
-        if (steering < 0) leftSteering = calculatedSteering;
-        else rightSteering = calculatedSteering;
-
-        double motorPower = MotorPower(power);
-        leftMotor.setPower(motorPower*leftSteering); rightMotor.setPower(motorPower*rightSteering);
+//    public void Set(double power, double steering) {
+//        // If Steering is -1 Pivot around Center Left, if Steering is 1 Pivot around Center Right
+//        // If Steering is -0.5 Steer Robot to left while moving forward, and vice versa for 0.5
+//        // The Reason for using Steering is it will work better for correction implementation as you can use the steering input for where you would put your correction factor like yaw error for example
+//        steering = Util.IntClamp(steering);
+//        double leftSteering=1, rightSteering=1;
+//        double calculatedSteering = -(Math.abs(steering)-0.5)*2;
+//        if (steering < 0) leftSteering = calculatedSteering;
+//        else rightSteering = calculatedSteering;
+//
+//        double motorPower = MotorPower(power);
+//        leftMotor.setPower(motorPower*leftSteering); rightMotor.setPower(motorPower*rightSteering);
+//    }
+    public void Set(double x, double y) {
+        leftMotor.setPower(MotorPower(x+y));
+        rightMotor.setPower(MotorPower(x-y));
     }
     public void StartMoving() { isMoving = true; Set(Constants.DRIVE_FORWARD_POWER); }
     public void StopMoving() { isMoving = false; Set(0); }

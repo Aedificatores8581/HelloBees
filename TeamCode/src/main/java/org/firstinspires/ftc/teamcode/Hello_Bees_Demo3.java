@@ -113,15 +113,15 @@ public class Hello_Bees_Demo3 extends OpMode {
     private void buttonEvents() {
         // Simplified down all into classes that handle button blocks the same way that a normal one does
 
-        //startStopFogCycle.update(gamepad1.b);
-        stopAll.update(gamepad1.a);
+        startStopFogCycle.update(gamepad1.a);
+        //stopAll.update(gamepad1.a);
         shoulderHome.update(gamepad2.b);
         homeArm.update(gamepad1.y);
-        //startTreatment.update(gamepad1.y);
+        //startTreatment.update(gamepad1.a);
         lockTarget.update(gamepad1.x);
         lockManualTarget.update(gamepad2.y);
         unlockTarget.update(gamepad1.y);
-        toggle_arm_full.update(gamepad1.b);
+        //toggle_arm_full.update(gamepad1.b);
         dpadUp.update(gamepad1.dpad_up);
         dpadDown.update(gamepad1.dpad_down);
         dpadLeft.update(gamepad1.dpad_left);
@@ -134,6 +134,9 @@ public class Hello_Bees_Demo3 extends OpMode {
     public void stop() {
     }
     private void telemetry() {
+        telemetry.addLine("Pad1 X:Lock Y:Unlock&Home A:Treat B:");
+        telemetry.addLine("Pad2 B:Home Shoulder Y:Manual Lock");
+
         if(arm_full_toggle&& robot.isReadyToTreat()&&robot.isArm_ready()&&robot.isArmHomed()){
             telemetry.addLine("****** READY FULL CYCLE  ******");
         }
