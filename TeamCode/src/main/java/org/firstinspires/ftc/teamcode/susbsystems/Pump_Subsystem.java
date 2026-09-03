@@ -60,8 +60,8 @@ public class Pump_Subsystem { // Working but Could be Missing Some Needed Functi
         TurnOn();
     }
     public void RunForTicks(int ticks) {
-        ResetEncoder();
-        targetTicks = ticks;
+//        ResetEncoder();
+        targetTicks = ticks + currentPosition;
         usingRunToPosition = true;
         motor.setTargetPosition(targetTicks);
         motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);

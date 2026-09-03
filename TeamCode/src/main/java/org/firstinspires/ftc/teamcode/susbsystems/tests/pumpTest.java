@@ -27,7 +27,7 @@ public class pumpTest extends OpMode {
         pumpRunForTime = new ButtonBlock()
                 .onTrue(() -> {pump.RunForSeconds(timeRunFor);});
         dpadUp = new ButtonBlock()
-                .onTrue(() -> {timeRunFor = timeRunFor +5;});
+                .onTrue(() -> {timeRunFor = timeRunFor + 5;});
         dpadDown = new ButtonBlock()
                 .onTrue(() -> {timeRunFor = timeRunFor - 5;});
         pumpTurnOff = new ButtonBlock()

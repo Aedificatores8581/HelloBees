@@ -60,6 +60,7 @@ public class relayDeviceTest extends OpMode {
         telemetry.addLine("Toggles: (A:Fan) (B:Fogger)");
         telemetry.addLine("Run For Time: (X:Fan) (Y:Fogger)");
         telemetry.addLine("+/- RunForTime: (DPadUp:+) (DPadDown:-)");
+        telemetry.addLine("Lock/Unlock Devices: (Right Bumper:Toggle)");
         telemetry.addLine();
         telemetry.addLine("  Telemetry Info:");
         telemetry.addData("Fan State", fan.GetState());
