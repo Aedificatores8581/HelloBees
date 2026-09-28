@@ -253,21 +253,22 @@ class ArmAutomation {
     }
 
     void fullCycle() {
-        if(robot.fullCycleState == 1 && !robot.arm_automation){
-            robot.fullCycleState++;
-            robot.init_cycle();
-        }
-        if(robot.fullCycleState == 2 && !robot.cycling){
-            robot.fullCycleState++;
-            robot.pump.TurnOff();
-            robot.fan.TurnOff();
-            robot.fogger.TurnOff();
-            initArmToHome();
-        }
-        if(robot.fullCycleState ==3 && !robot.arm_automation){
-            robot.fullCycleState = 0;
-            robot.fullCycleAutomation = false;
-        }
+//        if(robot.fullCycleState == 1 && !robot.arm_automation){
+//            robot.fullCycleState++;
+//            robot.init_cycle();
+//        }
+//        if(robot.fullCycleState == 2 && !robot.cycling){
+//            robot.fullCycleState++;
+//            robot.pump.TurnOff();
+//            robot.fan.TurnOff();
+//            robot.fogger.TurnOff();
+//            initArmToHome();
+//        }
+//        if(robot.fullCycleState ==3 && !robot.arm_automation){
+//            robot.fullCycleState = 0;
+//            robot.fullCycleAutomation = false;
+//        }
+        robot.fullFogger.startFullTreatment();
     }
 
     void startTreatment(boolean armOrTreat) {

@@ -92,8 +92,20 @@ public class FullFoggerSubsystem {
         fogger.FullShutOff();
         fan.FullShutOff();
     }
+    public void setPumpAmount(int ticks) {pumpAmount = ticks;}
+    public void setTargetCycleCount(int count) {targetCycleCount = count;}
+    public void setTankUsesBeforeRefill(int uses) {tankUsesBeforeRefill = uses;}
+    public void setFanTime(double seconds) {fanTime = seconds;}
+    public void setFogTime(double seconds) {fogTime = seconds;}
+    public double getFanTime() {return fanTime;}
+    public double getFogTime() {return fogTime;}
+    public int getPumpAmount() {return pumpAmount;}
+    public int getTargetCycleCount() {return targetCycleCount;}
     public int getTankUses() {return tankUses;}
     public int getCycleCount() {return cycleCount;}
     public int getFogCycleState() {return fogCycleState;}
     public int getTreatmentState() {return treatmentState;}
+    public boolean isCycling() {return fogCycleState != 0;}
+    public boolean isTreating() {return treatmentState != 0;}
+    public boolean isBusy() {return isCycling() || isTreating();}
 }

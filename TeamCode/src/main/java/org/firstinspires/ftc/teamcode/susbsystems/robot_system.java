@@ -12,15 +12,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.Constants;
 
 public class robot_system {
-    // robot constants
-    private double y_target_offset = 0;
-    private double x_target_offset = 0;
 
     //robot subsystems
     Drive robot_drive;
-    RelayDevice fan;
-    RelayDevice fogger;
-    Pump_Subsystem pump;
+//    RelayDevice fan;
+//    RelayDevice fogger;
+//    Pump_Subsystem pump;
+    FullFoggerSubsystem fullFogger;
     Arm725 shoulder;
     LinkageExtension725 extension;
     Turret725 turret;
@@ -142,12 +140,13 @@ public class robot_system {
     }
 
     public robot_system(HardwareMap hm) {
-        pump = new Pump_Subsystem(hm, "pump");
+//        pump = new Pump_Subsystem(hm, "pump");
+//        fan = new RelayDevice(hm, "valve1");
+//        fogger = new RelayDevice(hm, "compressor1");
+        fullFogger = new FullFoggerSubsystem(hm);
         shoulder = new Arm725(hm);
         turret = new Turret725(hm);
         wrist = new Wrist(hm);
-        fan = new RelayDevice(hm, "valve1");
-        fogger = new RelayDevice(hm, "compressor1");
         extension = new LinkageExtension725(hm);
         robot_drive = new Drive(hm);
         vision = new Vision725(hm);
@@ -166,17 +165,18 @@ public class robot_system {
     }
 
     public void update() {
-        pump.update();
         shoulder.Update();
         turret.Update();
         wrist.Update();
-        fan.Update();
-        fogger.Update();
+//        pump.update();
+//        fan.Update();
+//        fogger.Update();
+        fullFogger.update();
         extension.Update();
         vision.Update();
         armAutomationController.updateArmPositionAndHome();
         arm_is_busy = shoulder.IsBusy() || turret.IsBusy() || wrist.IsBusy() || extension.IsBusy();
-        if (cycling) {cycle();}
+//        if (cycling) {cycle();}
         if (arm_automation) {armAutomationController.armToPosition();}
         if (!arm_ready) {armAutomationController.armReady();}
         if (fullCycleAutomation) {armAutomationController.fullCycle();}
@@ -203,18 +203,6 @@ public class robot_system {
         robot_drive.Set(power, steering);
     }
 
-    public void doSomething(Subsystems subsystem) {
-        switch (subsystem) {
-            case PUMP:
-                pump.ToggleState();
-                break;
-            case FAN:
-                fan.ToggleState();
-            default:
-                break;
-        }
-    }
-
     public void runForTime(int seconds) {
         runForTime = seconds;
     }
@@ -227,80 +215,87 @@ public class robot_system {
     //************************************
     //*************************************
     public void startFogCycle() {
-        cycling = true;
-        init_cycle();
+//        cycling = true;
+//        init_cycle();
+        fullFogger.startFullTreatment();
     }
 
     public void stopFogCycle() {
-        cycling = false;
-        pump.TurnOff();
-        fan.TurnOff();
-        fogger.TurnOff();
-        cyclecount = 0;
+//        cycling = false;
+//        pump.TurnOff();
+//        fan.TurnOff();
+//        fogger.TurnOff();
+//        cyclecount = 0;
+        fullFogger.stopFullTreatment();
     }
 
-    void init_cycle() {
-        cycling = true;
-        pumpRunTime.reset();
-        fogRunTime.reset();
-        cyclecount = 0;
-        pump.TurnOn();
-        fogger.TurnOn();
-    }
+//    void init_cycle() {
+//        cycling = true;
+//        pumpRunTime.reset();
+//        fogRunTime.reset();
+//        cyclecount = 0;
+//        pump.TurnOn();
+//        fogger.TurnOn();
+//    }
 
-    private void cycle() {
-        if (pumpRunTime.seconds() > pumpTime) {
-            pump.TurnOff();
-        }
-        if (cyclecount == 0 && fogRunTime.seconds() > fogTime) {
-            fanRunTime.reset();
-            fan.TurnOn();
-            cyclecount++;
-        }
-        if (fanRunTime.seconds() > fanTime) {
-            fan.ToggleState();
-            fanRunTime.reset();
-        }
-        if (cyclecount > 0) {
-            if (fogRunTime.seconds() > fogTime) {
-                fogger.ToggleState();
-                fogRunTime.reset();
-                cyclecount++;
-            }
-        }
-        if (cyclecount > cycleTarget) {
-            pump.TurnOff();
-            fan.TurnOff();
-            fogger.TurnOff();
-            cycling = false;
-        }
-    }
+//    private void cycle() {
+//        if (pumpRunTime.seconds() > pumpTime) {
+//            pump.TurnOff();
+//        }
+//        if (cyclecount == 0 && fogRunTime.seconds() > fogTime) {
+//            fanRunTime.reset();
+//            fan.TurnOn();
+//            cyclecount++;
+//        }
+//        if (fanRunTime.seconds() > fanTime) {
+//            fan.ToggleState();
+//            fanRunTime.reset();
+//        }
+//        if (cyclecount > 0) {
+//            if (fogRunTime.seconds() > fogTime) {
+//                fogger.ToggleState();
+//                fogRunTime.reset();
+//                cyclecount++;
+//            }
+//        }
+//        if (cyclecount > cycleTarget) {
+//            pump.TurnOff();
+//            fan.TurnOff();
+//            fogger.TurnOff();
+//            cycling = false;
+//        }
+//    }
 
-    public int getCyclecount() {return cyclecount;}
-    public boolean isCycling() {return cycling;}
-    public double getFogTime(){return fogTime;}
-    public double getFanTime(){return fanTime;}
-    public double getPumpTime(){return pumpTime;}
-    public int getCycleTarget(){return cycleTarget;}
-    public void setPumpTime(double pump){
-        if (pump < 1) pump = 1;
-        if (pump > 20) pump = 20;
-        pumpTime = pump;}
-    public void setFanTime(double fan){
-        if (fan <1) fan = 1;
-        if (fan > 10) fan = 10;
-        fanTime = fan;}
-    public void setFogTime(double fog){
-        if (fog <1) fog = 1;
-        if (fog > 10) fog = 10;
-        fogTime = fog;}
+    public int getCyclecount() {return fullFogger.getCycleCount();}
+    public boolean isCycling() {return fullFogger.isCycling();}
+    public double getFogTime(){return fullFogger.getFogTime();}
+    public double getFanTime(){return fullFogger.getFanTime();}
+    public int getPumpAmount() {return fullFogger.getPumpAmount();}
+    public int getCycleTarget(){return fullFogger.getTargetCycleCount();}
+    public void setPumpAmount(int ticks){
+        if (ticks < 1000) ticks = 1000;
+        if (ticks > 20000) ticks = 20000;
+        fullFogger.pumpAmount = ticks;
+    }
+    public void setFanTime(double seconds){
+        if (seconds <1) seconds = 1;
+        if (seconds > 10) seconds = 10;
+        fullFogger.setFanTime(seconds);
+    }
+    public void setFogTime(double seconds){
+        if (seconds <1) seconds = 1;
+        if (seconds > 10) seconds = 10;
+        fullFogger.setFogTime(seconds);
+    }
     public void setCyclecount(int count){
         if (count < 5) count = 5;
         if (count > 30) count = 30;
-        cycleTarget = count;}
+        fullFogger.setTargetCycleCount(count);
+    }
     public void shutOffRelays() {
-        fan.FullShutOff();
-        fogger.FullShutOff();
+//        fan.FullShutOff();
+//        fogger.FullShutOff();
+        fullFogger.ShutOffRelays();
     }
 
     //code used for the move arm to point in space

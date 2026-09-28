@@ -132,6 +132,7 @@ public class Hello_Bees_Demo3 extends OpMode {
 
     @Override
     public void stop() {
+        robot.shutOffRelays();
     }
     private void telemetry() {
         telemetry.addLine("Pad1 X:Lock Y:Unlock&Home A:Treat B:");
