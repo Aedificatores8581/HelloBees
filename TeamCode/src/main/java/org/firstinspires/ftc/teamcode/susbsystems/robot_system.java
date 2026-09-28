@@ -15,9 +15,6 @@ public class robot_system {
 
     //robot subsystems
     Drive robot_drive;
-//    RelayDevice fan;
-//    RelayDevice fogger;
-//    Pump_Subsystem pump;
     FullFoggerSubsystem fullFogger;
     Arm725 shoulder;
     LinkageExtension725 extension;
@@ -140,9 +137,6 @@ public class robot_system {
     }
 
     public robot_system(HardwareMap hm) {
-//        pump = new Pump_Subsystem(hm, "pump");
-//        fan = new RelayDevice(hm, "valve1");
-//        fogger = new RelayDevice(hm, "compressor1");
         fullFogger = new FullFoggerSubsystem(hm);
         shoulder = new Arm725(hm);
         turret = new Turret725(hm);
@@ -168,9 +162,6 @@ public class robot_system {
         shoulder.Update();
         turret.Update();
         wrist.Update();
-//        pump.update();
-//        fan.Update();
-//        fogger.Update();
         fullFogger.update();
         extension.Update();
         vision.Update();
