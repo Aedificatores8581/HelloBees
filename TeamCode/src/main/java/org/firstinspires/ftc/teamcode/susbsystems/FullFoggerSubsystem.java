@@ -45,8 +45,14 @@ public class FullFoggerSubsystem {
         tankUses = 0;
     }
     public void startFullTreatment() {
+        if (treatmentState != 0) return;
         treatmentState = 1;
         cycleCount = 0;
+    }
+    public void stopFullTreatment() {
+        treatmentState = 0;
+        fogger.TurnOff();
+        fan.TurnOff();
     }
     public void updateTreatment() {
         switch (treatmentState) {
@@ -64,8 +70,14 @@ public class FullFoggerSubsystem {
         }
     }
     public void startFogCycle() {
+        if (fogCycleState != 0) return;
         tankUses++;
         fogCycleState = 1;
+    }
+    public void stopFogCycle() {
+        fogCycleState = 0;
+        fogger.TurnOff();
+        fan.TurnOff();
     }
     public void updateFogCycle() {
         switch (fogCycleState) {
@@ -76,5 +88,12 @@ public class FullFoggerSubsystem {
             case 4: if (!fan.GetState()) fogCycleState = 0;break;
         }
     }
-
+    public void ShutOffRelays() {
+        fogger.FullShutOff();
+        fan.FullShutOff();
+    }
+    public int getTankUses() {return tankUses;}
+    public int getCycleCount() {return cycleCount;}
+    public int getFogCycleState() {return fogCycleState;}
+    public int getTreatmentState() {return treatmentState;}
 }

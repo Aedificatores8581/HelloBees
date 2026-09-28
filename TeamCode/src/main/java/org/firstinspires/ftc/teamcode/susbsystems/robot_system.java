@@ -298,6 +298,10 @@ public class robot_system {
         if (count < 5) count = 5;
         if (count > 30) count = 30;
         cycleTarget = count;}
+    public void shutOffRelays() {
+        fan.FullShutOff();
+        fogger.FullShutOff();
+    }
 
     //code used for the move arm to point in space
     //************************************
@@ -469,7 +473,7 @@ public class robot_system {
     //shoulder functions
     //**************************************************************************************
     //**************************************************************************************
-    public void shoulderHome() {shoulder.Home();}
+    public void shoulderHome() {shoulder.SetHome();}
 
     public void shoulderSetPower(double power) {shoulder.SetPower(power);}
 

@@ -173,7 +173,7 @@ public class Arm725 {
     public double GetPower() {return currentPower;}
     public double GetTargetHeight() {return targetHeight;}
     public boolean Homed() {return homed;}
-    public void Home() {
+    public void SetHome() {
         homed = true;
         ResetEncoder();
     }

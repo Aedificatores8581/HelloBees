@@ -25,7 +25,7 @@ public class RobotTest extends OpMode {
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         robot = new robot_system(hardwareMap);
-        armTarget = new Position(DistanceUnit.INCH,-30,-7,-6,System.nanoTime());
+        armTarget = new Position(DistanceUnit.INCH,-28,-3,8,System.nanoTime());
         tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
@@ -101,6 +101,7 @@ public class RobotTest extends OpMode {
 
     @Override
     public void stop() {
+        robot.shutOffRelays();
     }
     private void telemetry() {
         telemetry.addLine("  Controls Guide:");
@@ -117,7 +118,7 @@ public class RobotTest extends OpMode {
         telemetry.addLine("  Telemetry Info:");
         telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
         telemetry.addData("Target Position: ", pump.GetTarget()+" Busy: "+pump.isBusy());*/
-        telemetry.addData("Fog Cycle: ", robot.isCycling()+"Cycle Count: "+robot.getCyclecount());
+        telemetry.addLine("Fog Cycle: "+robot.isCycling()+", Cycle Count: "+robot.getCyclecount());
         telemetry.addLine("Telemetry: (Arm)");
         telemetry.addData("Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
         telemetry.addData("Target:"," (X) %.2f (Y) %.2f (Z) %.2f", armTarget.x,armTarget.y,armTarget.z);
@@ -135,16 +136,16 @@ public class RobotTest extends OpMode {
             armTarget.y = 7;
         }
         else if(yPosTarget == 0){
-            armTarget.y = 7;
+            armTarget.y = -3;
         }
         else if(yPosTarget == 1){
             armTarget.y = 0;
         }
         else if(yPosTarget == 2){
-            armTarget.y = 10;
+            armTarget.y = 7;
         }
         else if(yPosTarget == 3){
-            armTarget.y = -7;
+            armTarget.y = 10;
         }
         else {
             yPosTarget = 3;

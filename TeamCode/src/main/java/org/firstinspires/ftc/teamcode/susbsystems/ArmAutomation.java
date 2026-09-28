@@ -7,6 +7,7 @@ import static org.firstinspires.ftc.teamcode.Constants.TAG_ID_1_Y_MAX;
 import static org.firstinspires.ftc.teamcode.Constants.TAG_ID_1_Y_MIN;
 import static org.firstinspires.ftc.teamcode.Constants.TAG_ID_1_Z_OFFSET;
 import static org.firstinspires.ftc.teamcode.Constants.TURRENT_TO_CAMERA;
+import static org.firstinspires.ftc.teamcode.Constants.ZERO_DEGREES;
 
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.Constants;
@@ -38,7 +39,7 @@ class ArmAutomation {
             }
         }
 
-        if(robot.shoulder.GetRawPos() <25 && robot.shoulder.GetRawPos() > -25 && robot.turret.GetRawPos() >.310 && robot.extension.isAtHome()){
+        if(robot.shoulder.GetRawPos() <25 && robot.shoulder.GetRawPos() > -25 && robot.turret.GetRawPos() >ZERO_DEGREES && robot.extension.isAtHome()){
             if(robot.arm_ready){robot.arm_homed = true;}
         }
         else robot.arm_homed = false;

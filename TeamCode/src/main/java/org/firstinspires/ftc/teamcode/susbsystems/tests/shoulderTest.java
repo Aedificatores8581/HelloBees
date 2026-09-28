@@ -10,7 +10,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 @TeleOp(name = "Shoulder Test", group = "SubsysTest")
 public class shoulderTest extends LinearOpMode{
     Arm725 shoulder;
-    ButtonBlock runToPos, stopArm, dpadUp, dpadDown,runToHeight, runToHome;
+    ButtonBlock runToPos, stopArm, dpadUp, dpadDown,runToHeight, setHome;
     private Servo wrist;
 
     private static final double MANUAL_DEADBAND = 0.05;
@@ -27,14 +27,14 @@ public class shoulderTest extends LinearOpMode{
         dpadUp = new ButtonBlock().onTrue(() -> {targetPos += 3;});
         dpadDown = new ButtonBlock().onTrue(() -> {targetPos -= 3;});
         runToHeight = new ButtonBlock().onTrue(() -> {shoulder.GoToHeight(targetPos);});
-        runToHome = new ButtonBlock().onTrue(() -> {shoulder.Home();});
+        setHome = new ButtonBlock().onTrue(() -> {shoulder.SetHome();});
 
 
         telemetry.addLine("Initialized");
         telemetry.update();
 
         while (!shoulder.Homed() && !opModeIsActive() && !isStopRequested()) {
-            runToHome.update(gamepad1.x);
+            setHome.update(gamepad1.x);
             handleManualShoulderControl();
             shoulder.Update();
         }
@@ -44,7 +44,7 @@ public class shoulderTest extends LinearOpMode{
             runToPos.update(gamepad1.a);
             runToHeight.update(gamepad1.y);
             stopArm.update(gamepad1.b);
-            runToHome.update(gamepad1.x);
+            setHome.update(gamepad1.x);
             dpadUp.update(gamepad1.dpad_up);
             dpadDown.update(gamepad1.dpad_down);
 
@@ -54,7 +54,7 @@ public class shoulderTest extends LinearOpMode{
             telemetry.addLine("  Controls Guide:");
             telemetry.addLine("A: Go to Target Angle");
             telemetry.addLine("B: Force Stop");
-            telemetry.addLine("X: Home");
+            telemetry.addLine("X: Set Home");
             telemetry.addLine("Y: Go to Target Height");
             telemetry.addLine("Right Stick Y: Up/Down");
             telemetry.addLine();
