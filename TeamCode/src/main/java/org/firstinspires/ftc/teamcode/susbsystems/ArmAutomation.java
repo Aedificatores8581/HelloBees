@@ -209,6 +209,8 @@ class ArmAutomation {
                 robot.arm_state = 5;
                 robot.extension_target = Math.abs(robot.target_position.x)-(Math.abs(robot.wrist.GetLength())+Math.abs(robot.arm_position.x)+1);
                 robot.extension.GoTo(robot.extension_target);
+                // calculated position is around ~-19.75
+                // min and max are 0 and 10
             }
             if (robot.arm_state == 5 && !robot.extension.IsBusy()) {
                 robot.arm_state = 0;
