@@ -110,7 +110,7 @@ public class Wrist {
     }
     public double GetLength(){
         double temp;
-        temp = currentAngle;
+        temp = 180-currentAngle; // subtract 180 to make wrist flat zero degrees. This makes cosine(currentAngle) = 1 making temp positive
         temp = Math.toRadians(temp);
         temp = Math.cos(temp);
         return (WRIST_RADIUS *temp);

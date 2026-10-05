@@ -11,7 +11,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
  * Keep coordinate sign conventions here so FK, IK, automation, and telemetry
  * use the same robot model.
  */
-class RobotGeometry {
+public class RobotGeometry {
     static final double SHOULDER_RADIUS = 21.5;
     static final double TURRET_LENGTH = 10.2362;
     static final double TEST_IK_TREATMENT_Y_WINDOW = 5;
@@ -41,8 +41,8 @@ class RobotGeometry {
     private RobotGeometry() {
     }
 
-    static Position turretOffset(double turretDegrees) {
-        double turretRadians = Math.toRadians(turretDegrees);
+    public static Position turretOffset(double turretDegrees) {
+        double turretRadians = Math.toRadians(turretDegrees+90);
         return new Position(
                 DistanceUnit.INCH,
                 TURRET_LENGTH * Math.cos(turretRadians),
