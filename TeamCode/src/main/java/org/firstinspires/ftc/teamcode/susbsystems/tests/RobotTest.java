@@ -122,6 +122,7 @@ public class RobotTest extends OpMode {
         telemetry.addLine("Telemetry: (Arm)");
         telemetry.addData("Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
         telemetry.addData("Target:"," (X) %.2f (Y) %.2f (Z) %.2f", armTarget.x,armTarget.y,armTarget.z);
+        telemetry.addData("Robot Target:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getTarget_position().x,robot.getTarget_position().y,robot.getTarget_position().z);
         telemetry.addData("Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready());
         telemetry.addData("Homed: (Yes/No)", robot.isArmHomed()+" (Busy) "+robot.isArmBusy()+" BadPos: "+robot.isArm_last_position_bad());
         //telemetry.addData("Extension:"," (PosTarget) %.2f (isBusy) %b",robot.getExtensionTarget(),robot.isBusyExtension());

@@ -205,9 +205,9 @@ class ArmAutomation {
                 robot.arm_state = 4;
                 robot.wrist.SetTargetPos(.55);
             }
-            if (robot.arm_state == 4 && !robot.wrist.IsBusy()) {
+            if (robot.arm_state == 4 && !robot.wrist.IsBusy() /*&& false *//*temporary false for testing`*/) {
                 robot.arm_state = 5;
-                robot.extension_target = Math.abs(robot.target_position.x)-(Math.abs(robot.wrist.GetLength())+Math.abs(robot.arm_position.x)+1);
+                robot.extension_target = Math.abs(robot.target_position.x)+Math.abs(robot.getExtensionPosition())-(Math.abs(robot.wrist.GetLength())+Math.abs(robot.arm_position.x)+1);
                 robot.extension_target /= -2; // Temporary fix only for testing
                 robot.extension.GoTo(robot.extension_target);
                 // calculated position is around ~-19.75

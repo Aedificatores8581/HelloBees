@@ -313,6 +313,7 @@ public class robot_system {
         if(!arm_is_busy){
             //arm_automation = true;
             arm_last_position_bad = armAutomationController.initArmToPosition(target, target_degrees);
+            target_position = target;
         }
     }
 
