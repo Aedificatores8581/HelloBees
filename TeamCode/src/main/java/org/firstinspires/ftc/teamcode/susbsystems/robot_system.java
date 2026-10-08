@@ -309,9 +309,10 @@ public class robot_system {
         return RobotGeometry.turretTargetX(turretDegrees);
     }
 
-    public void startarmToPosition(Position target) {
+    public void startArmToPosition(Position target) {
         if(!arm_is_busy){
             //arm_automation = true;
+            target_degrees = (int)(Math.asin(target.y/shoulderPivotRadius()) * 180/Math.PI);
             arm_last_position_bad = armAutomationController.initArmToPosition(target, target_degrees);
             target_position = target;
         }

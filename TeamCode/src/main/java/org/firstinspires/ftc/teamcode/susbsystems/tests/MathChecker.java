@@ -30,7 +30,7 @@ public class MathChecker extends OpMode {
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
         startArm = new ButtonBlock()
-                .onTrue(() -> {robot.startarmToPosition(armTarget);});
+                .onTrue(() -> {robot.startArmToPosition(armTarget);});
         stopShoulder = new ButtonBlock()
                 .onTrue(() -> {robot.shoulderStop();});
         shoulderHome = new ButtonBlock()
@@ -42,7 +42,7 @@ public class MathChecker extends OpMode {
         startStopArm = new ButtonBlock()
                 .onTrue(()-> {
                     if (robot.isArm_automation()) {robot.stopArmToPosition();}
-                    else {robot.startarmToPosition(armTarget);}});
+                    else {robot.startArmToPosition(armTarget);}});
         homeArm = new ButtonBlock()
                 .onTrue(()-> {
                     if (robot.isArm_automation()) {robot.stopArmToPosition();}

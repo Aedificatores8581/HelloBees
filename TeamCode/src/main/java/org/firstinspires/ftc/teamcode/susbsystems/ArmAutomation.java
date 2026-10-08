@@ -184,7 +184,11 @@ class ArmAutomation {
                 } else if (degrees == 45) {
                     robot.turret.GoTo(Constants.FORTYFIVE_DEGREES);
                     validPosition = true;
-                } else {stopArmToPosition();}
+                } else if (degrees > 45 && degrees < 225) {
+                    robot.turret.GoTo(robot.turret.degreesToTicks(degrees));
+                    validPosition = true;
+                }
+                else {stopArmToPosition();}
             }
         }
         return validPosition;

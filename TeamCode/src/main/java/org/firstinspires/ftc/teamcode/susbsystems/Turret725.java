@@ -172,9 +172,22 @@ public class Turret725 {
         currentAngle = POTS_ANGLES.get(POTS_POSITIONS.indexOf(closestValue));
         currentAngleRAD = Math.toRadians(currentAngle);
     }
+    public double ticksToDegrees (double ticks) {
+        return -53.268 * Math.pow(ticks,2) + 312.4707*ticks - 172.2134;
+    }
+
+    public double degreesToTicks(double degrees) {
+        double a = -53.268;
+        double b = 312.4707;
+        double c = -172.2134;
+
+        return (-b + Math.sqrt(b * b - 4 * a * (c - degrees))) / (2 * a);
+    }
+
     public void Update() {
         currentPosition = GetRawPos();
-        newcurrentAngleDegrees = -53.268 * Math.pow(currentPosition,2) + 312.4707*currentPosition - 172.2134;
+//        newcurrentAngleDegrees = -53.268 * Math.pow(currentPosition,2) + 312.4707*currentPosition - 172.2134;
+        newcurrentAngleDegrees = ticksToDegrees(currentPosition);
         setAngle();
         this.currentxyzPosition = new Position(DistanceUnit.INCH,TURRET_LENGTH * Math.cos(currentAngleRAD),TURRET_LENGTH * Math.sin(currentAngleRAD),0,System.nanoTime());
 

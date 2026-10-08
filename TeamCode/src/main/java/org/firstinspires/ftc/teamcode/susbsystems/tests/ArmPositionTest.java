@@ -7,7 +7,6 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.susbsystems.robot_system;
 import org.firstinspires.ftc.teamcode.util.ButtonBlock;
@@ -32,7 +31,7 @@ public class ArmPositionTest extends OpMode {
         stopArm = new ButtonBlock()
                 .onTrue(() -> {robot.stopArmToPosition();});
         startArm = new ButtonBlock()
-                .onTrue(() -> {robot.startarmToPosition(armTarget);});
+                .onTrue(() -> {robot.startArmToPosition(armTarget);});
         startFogCycle = new ButtonBlock()
                 .onTrue(() -> {robot.startFogCycle();});
         stopFogCycle = new ButtonBlock()
@@ -48,7 +47,7 @@ public class ArmPositionTest extends OpMode {
         startStopArm = new ButtonBlock()
                 .onTrue(()-> {
                     if (robot.isArm_automation()) {robot.stopArmToPosition();}
-                    else {robot.startarmToPosition(armTarget);}});
+                    else {robot.startArmToPosition(armTarget);}});
         startStopFogCycle = new ButtonBlock()
                 .onTrue(()-> {
                     if (robot.isCycling()) {robot.stopFogCycle();}
