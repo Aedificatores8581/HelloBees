@@ -188,7 +188,7 @@ class ArmAutomation {
                     robot.turret.GoTo(robot.turret.degreesToTicks(degrees));
                     validPosition = true;
                 }
-                else {stopArmToPosition();}
+                else {validPosition = false; stopArmToPosition();}
             }
         }
         return validPosition;
