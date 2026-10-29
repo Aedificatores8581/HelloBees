@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.susbsystems.tests;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -18,11 +19,13 @@ public class RobotTest extends OpMode {
     ButtonBlock stopStartFullCycle;
     Position armTarget, tagLocation;
     ButtonBlock dpadUp, dpadDown, dpadLeft, dpadRight;
+    FtcDashboard dashInstance;
     int yPosTarget = 0;
 
     @Override
     public void init() {
-        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        dashInstance = FtcDashboard.getInstance();
+        telemetry = new MultipleTelemetry(telemetry, dashInstance.getTelemetry());
         robot = new robot_system(hardwareMap);
         armTarget = new Position(DistanceUnit.INCH,-28,-3,8,System.nanoTime());
         tagLocation = new Position(DistanceUnit.INCH,0,0,0,0);
@@ -103,20 +106,26 @@ public class RobotTest extends OpMode {
         robot.shutOffRelays();
     }
     private void telemetry() {
+        TelemetryPacket packet = new TelemetryPacket();
+        packet.fieldOverlay()
+                .setStroke("blue")
+                .strokeLine(0,-10.71-robot.getExtensionPosition(),-robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().x+10.71-robot.getExtensionPosition())
+                .setStroke("blue")
+                .strokeCircle(0,-10.71-robot.getExtensionPosition(),10.71)
+                .setFill("blue")
+                .fillCircle(0,-24,3);
+        dashInstance.sendTelemetryPacket(packet);
         telemetry.addLine("  Controls Guide:");
         //telemetry.addLine("Arm to Pos: (A:Stop) (B:Start)");
         //telemetry.addLine("Shoulder: (A:Stop) (B:Home)");
         //telemetry.addLine("(A:Stop/Start Full) (B:Home/Stop Shoulder)");
-        telemetry.addLine("(A:Stop/Start Arm To Pos) (B:Home/Stop Shoulder)");
+        telemetry.addLine("(A:Stop/Start Arm To Pos) (B:Set Shoulder Home)");
         telemetry.addLine("(X:Home Arm) (Y:Start/Stop Cycle)");
         //telemetry.addLine("Fog Cycle: (X:Start) (Y:Stop)");
-        //telemetry.addLine("Toggle Direction ()");
         telemetry.addLine("+/- Y Position: (DPadUp:+) (DPadDown:-)");
         telemetry.addLine("+/- Z Position: (DPadLeft:+) (DPadRight:-)");
-        /*telemetry.addLine();
-        telemetry.addLine("  Telemetry Info:");
-        telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
-        telemetry.addData("Target Position: ", pump.GetTarget()+" Busy: "+pump.isBusy());*/
+
+//        telemetry.addData("Pump: ","(On/Off)"+pump.GetState()+" Fan: (On/Off)"+fan.GetState());
         telemetry.addLine("Fog Cycle: "+robot.isCycling()+", Cycle Count: "+robot.getCyclecount());
         telemetry.addLine("Telemetry: (Arm)");
         telemetry.addData("Position:"," (X) %.2f (Y) %.2f (Z) %.2f", robot.getCurrent_Arm_Position().x,robot.getCurrent_Arm_Position().y,robot.getCurrent_Arm_Position().z);
@@ -125,7 +134,7 @@ public class RobotTest extends OpMode {
         telemetry.addData("Auto: (Yes/No)", robot.isArm_automation()+" (State) "+robot.armAutoState()+" (Ready) "+robot.isArm_ready());
         telemetry.addData("Homed: (Yes/No)", robot.isArmHomed()+" (Busy) "+robot.isArmBusy()+" BadPos: "+robot.isArm_last_position_bad());
         //telemetry.addData("Extension:"," (PosTarget) %.2f (isBusy) %b",robot.getExtensionTarget(),robot.isBusyExtension());
-        telemetry.addData("Wrist: H:","%.2f L:%.2f",robot.getWristHeight(),robot.getWristLength());
+        telemetry.addLine(String.format("Wrist: H:%.2f L:%.2f | Turret: Current:%.2f Target:%.2f",robot.getWristHeight(),robot.getWristLength(),robot.getTestTurretTargetDegrees(),robot.getTarget_degrees()));
         telemetry.addLine(String.format("Extension Current:%.2f Target:%.2f Local:%.2f",robot.getExtensionPosition(),robot.getExtensionTarget(), robot.getExtensionLocal_target()));
         //telemetry.addData("Turret:", "(isBusy) %b (Pos) %.3f (Target) %.3f",robot.turretIsBusy(),robot.turretPosition(),robot.turretTargetPosition());
         telemetry.addLine(String.format("[TAG] Detected %b x: %.2f y: %.2f z: %.2f", robot.isTagDetected(),tagLocation.x, tagLocation.y, tagLocation.z) );
@@ -134,7 +143,7 @@ public class RobotTest extends OpMode {
     private void yPos(int new_y_Position){
         if(yPosTarget < 0){
             yPosTarget = 0;
-            armTarget.y = 7;
+            armTarget.y = -3;
         }
         else if(yPosTarget == 0){
             armTarget.y = -3;
@@ -150,7 +159,7 @@ public class RobotTest extends OpMode {
         }
         else {
             yPosTarget = 3;
-            armTarget.y = -7;
+            armTarget.y = 10;
         }
     }
 }

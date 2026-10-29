@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.susbsystems.tests;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -16,6 +18,7 @@ public class turretTest extends LinearOpMode {
     double targetPos = .241;
     @Override
     public void runOpMode() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         turret725 = new Turret725(hardwareMap);
 
         runToPos = new ButtonBlock().onTrue(() -> {
@@ -54,7 +57,8 @@ public class turretTest extends LinearOpMode {
             telemetry.addData("Is Busy", turret725.IsBusy());
             telemetry.addData("Target Pos", targetPos);
             telemetry.addData("Current Pos:", "(Deg) "+ turret725.GetPos()+" (Raw) "+ turret725.GetRawPos());
-            telemetry.addData("Active Target Pos", "Deg: N/A Raw: "+ turret725.GetRawTargetPos());
+            telemetry.addData("Current Degrees:", turret725.rawToDegrees(turret725.GetRawPos())+90);
+            telemetry.addData("Active Target Pos", String.format("Deg: %.2f Raw: %.2f",turret725.rawToDegrees(turret725.GetRawTargetPos()),turret725.GetRawTargetPos()));
             telemetry.addData("Pos", "X: "+ turret725.getPosition().x+" Y: "+ turret725.getPosition().y+" Z:"+ turret725.getPosition().z);
             Position roboGeomPos = RobotGeometry.turretOffset(turret725.getNewcurrentAngleDegrees());
             telemetry.addLine("Robot Geometry X: "+ roboGeomPos.x+", Y: "+roboGeomPos.y);

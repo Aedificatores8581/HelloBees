@@ -2,21 +2,16 @@ package org.firstinspires.ftc.teamcode.susbsystems;
 
 import com.arcrobotics.ftclib.controller.PIDController;
 import com.qualcomm.robotcore.hardware.AnalogInput;
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.teamcode.Constants;
-import org.firstinspires.ftc.teamcode.util.Math.Vector2;
-import org.firstinspires.ftc.teamcode.util.Math.Vector3;
 import org.firstinspires.ftc.teamcode.util.Util;
 
 import java.util.ArrayList;
-import java.util.List;
 
 //TODO 7/14/25 - Frank
 // - confirm default 0 degree position and rotation direction
@@ -172,11 +167,11 @@ public class Turret725 {
         currentAngle = POTS_ANGLES.get(POTS_POSITIONS.indexOf(closestValue));
         currentAngleRAD = Math.toRadians(currentAngle);
     }
-    public double ticksToDegrees (double ticks) {
-        return -53.268 * Math.pow(ticks,2) + 312.4707*ticks - 172.2134;
+    public double rawToDegrees(double raw) {
+        return -53.268 * Math.pow(raw,2) + 312.4707*raw - 172.2134;
     }
 
-    public double degreesToTicks(double degrees) {
+    public double degreesToRaw(double degrees) {
         double a = -53.268;
         double b = 312.4707;
         double c = -172.2134;
@@ -187,7 +182,7 @@ public class Turret725 {
     public void Update() {
         currentPosition = GetRawPos();
 //        newcurrentAngleDegrees = -53.268 * Math.pow(currentPosition,2) + 312.4707*currentPosition - 172.2134;
-        newcurrentAngleDegrees = ticksToDegrees(currentPosition);
+        newcurrentAngleDegrees = rawToDegrees(currentPosition);
         setAngle();
         this.currentxyzPosition = new Position(DistanceUnit.INCH,TURRET_LENGTH * Math.cos(currentAngleRAD),TURRET_LENGTH * Math.sin(currentAngleRAD),0,System.nanoTime());
 
