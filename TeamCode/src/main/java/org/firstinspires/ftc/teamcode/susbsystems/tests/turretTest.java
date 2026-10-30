@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.util.ButtonBlock;
 @TeleOp (name = "Turret Test", group = "SubsysTest")
 public class turretTest extends LinearOpMode {
     Turret725 turret725;
-    ButtonBlock runToPos, stopTurret725, dpadUp, dpadDown;
+    ButtonBlock runToPos, stopTurret725, dpadUp, dpadDown, zeroTurret;
 
     double targetPos = .241;
     @Override
@@ -27,6 +27,7 @@ public class turretTest extends LinearOpMode {
             turret725.Stop();});
         dpadUp = new ButtonBlock().onTrue(() -> {targetPos += 5;});
         dpadDown = new ButtonBlock().onTrue(() -> {targetPos -= 5;});
+        zeroTurret = new ButtonBlock().onTrue(() -> {turret725.SetZero();});
 
         telemetry.addLine("Initialized");
         telemetry.update();
@@ -38,6 +39,7 @@ public class turretTest extends LinearOpMode {
             stopTurret725.update(gamepad1.b);
             dpadUp.update(gamepad1.dpad_up);
             dpadDown.update(gamepad1.dpad_down);
+            zeroTurret.update(gamepad1.y);
 
             if (!turret725.IsBusy()) turret725.SetPower(gamepad1.right_stick_x);
             else if (Math.abs(gamepad1.right_stick_x) > 0) {

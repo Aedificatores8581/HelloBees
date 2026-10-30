@@ -76,6 +76,8 @@ public class Turret725 {
     private double currentAngle = 0;
     private double currentAngleRAD = 0;
     private double newcurrentAngleDegrees = 0;
+
+    public static double rawZeroOffset = 0;
     private double currentDegree;
     //represents the direction the turret has last been set to
     private ArrayList<Double> POTS_POSITIONS;
@@ -136,11 +138,15 @@ public class Turret725 {
     public double GetTargetPosition(){return targetPosition;}
 
     public double GetPos() {return (currentAngle);}
-    public double GetRawPos() {return turretPot.getVoltage();}
+    public double GetRawZeroPos() {return turretPot.getVoltage();}
+    public double GetRawPos() {return turretPot.getVoltage() - rawZeroOffset;}
     //public double GetTargetPos() {return GetRawPos();}
     public double GetRawTargetPos() {return targetPosition;}
     public boolean InError() { return Math.abs(currentPosition - GetRawTargetPos()) < TURRET_ERROR;}
     public boolean IsBusy() {return isBusy;}
+    public void SetZero() {
+        rawZeroOffset = GetRawZeroPos();
+    }
     private void rawSet(double power) {
         motor.setPower(Util.IntClamp(power));
     }
@@ -168,13 +174,13 @@ public class Turret725 {
         currentAngleRAD = Math.toRadians(currentAngle);
     }
     public double rawToDegrees(double raw) {
-        return -53.268 * Math.pow(raw,2) + 312.4707*raw - 172.2134;
+        return -53.268 * Math.pow(raw,2) + 312.4707*raw - 172.2134+82.2134;
     }
 
     public double degreesToRaw(double degrees) {
         double a = -53.268;
         double b = 312.4707;
-        double c = -172.2134;
+        double c = -172.2134+82.2134;
 
         return (-b + Math.sqrt(b * b - 4 * a * (c - degrees))) / (2 * a);
     }
